@@ -122,7 +122,7 @@ export default function LoginPage() {
           {/* Extra Links */}
           <p className="mt-6 text-center text-sm text-gray-600">
     
-            <a href="#" className="text-black font-bold underline hover:underline">
+            <a href="/Signup" className="text-black font-bold underline hover:underline">
               Don’t have an account? Sign up
             </a>
           </p>
