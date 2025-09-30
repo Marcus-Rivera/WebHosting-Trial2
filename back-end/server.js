@@ -26,4 +26,35 @@ app.post("/api/login", (req, res) => {
   });
 });
 
+// SIGNUP endpoint
+app.post("/api/signup", (req, res) => {
+  const { firstname, lastname, birthday, gender, username, email, phone, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ status: "error", message: "Email and password are required" });
+  }
+
+  const fullName = `${firstname} ${lastname}`;
+  const role = "job_seeker"; // default role
+
+  const stmt = db.prepare(
+    `INSERT INTO user (name, birthday, gender, username, email, phone, password_hash, role)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+  );
+
+  stmt.run(fullName, birthday, gender, username, email, phone, password, role, function(err) {
+    if (err) {
+      if (err.message.includes("UNIQUE constraint")) {
+        return res.status(400).json({ status: "error", message: "Email already exists" });
+      }
+      console.error("DB Error:", err);
+      return res.status(500).json({ status: "error", message: "Database error" });
+    }
+    res.json({ status: "success", message: "User registered successfully", userId: this.lastID });
+  });
+
+  stmt.finalize();
+});
+
+
 app.listen(5000, () => console.log("Server running on http://localhost:5000"));
