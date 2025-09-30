@@ -35,7 +35,7 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) {
-      setAlertMessage("Please fix the errors above.");
+
       return;
     }
 
