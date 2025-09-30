@@ -6,7 +6,6 @@ import { Alert } from "@mui/material";
 const SignupPage = () => {
   const navigate = useNavigate();
 
-  // all form fields
   const [form, setForm] = useState({
     firstname: "",
     lastname: "",
@@ -22,8 +21,9 @@ const SignupPage = () => {
 
   const [errors, setErrors] = useState({});
   const [showAlert, setShowAlert] = useState(false);
+  const [alertMsg, setAlertMsg] = useState("");
+  const [alertType, setAlertType] = useState("error");
 
-  // handle input changes
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setForm((prev) => ({
@@ -32,7 +32,6 @@ const SignupPage = () => {
     }));
   };
 
-  // validation
   const validateForm = () => {
     let newErrors = {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -47,18 +46,42 @@ const SignupPage = () => {
       newErrors.password = "Password must be at least 6 characters";
     if (form.password !== form.confirmPassword)
       newErrors.confirmPassword = "Passwords do not match";
+    if (!form.agree) newErrors.agree = "You must accept Terms of Use";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // submit handler
-  const handleSignup = (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
     if (validateForm()) {
-      console.log("New User:", form);
-      navigate("/login");
+      try {
+        const response = await fetch("http://localhost/TaraTrabaho-Secure-AI-Powered-Assistant-for-Resume-Creation-and-Job-Matching/back-end/sign_up.php", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form),
+        });
+
+        const result = await response.json();
+
+        if (result.status === "success") {
+          setAlertType("success");
+          setAlertMsg("User registered successfully!");
+          setShowAlert(true);
+          setTimeout(() => navigate("/login"), 2000);
+        } else {
+          setAlertType("error");
+          setAlertMsg(result.message || "Registration failed");
+          setShowAlert(true);
+        }
+      } catch (error) {
+        setAlertType("error");
+        setAlertMsg("Error connecting to server");
+        setShowAlert(true);
+      }
     } else {
+      setAlertType("error");
+      setAlertMsg("Please fill out all fields properly");
       setShowAlert(true);
       setTimeout(() => setShowAlert(false), 3000);
     }
@@ -72,16 +95,15 @@ const SignupPage = () => {
       {/* Alert */}
       {showAlert && (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
-          <Alert severity="error">Please fill out all fields properly</Alert>
+          <Alert severity={alertType}>{alertMsg}</Alert>
         </div>
       )}
 
-      {/* Welcome Message */}
+      {/* Welcome Section */}
       <div className="flex w-full lg:w-2/3 items-center justify-center p-3 mx-auto">
         <div className="flex w-full lg:w-1/2 justify-center items-center">
           <div className="text-[#272343] p-2">
             <h3 className="text-3xl font-inter font-bold">Welcome To</h3>
-
             <h1 className="text-5xl lg:text-7xl text-center font-inter font-bold mt-10 mb-2 italic text-[#272343] animate-bounce">
               Tara
               <span className="text-yellow-400 drop-shadow-[2px_2px_0px_black] italic">
@@ -92,7 +114,7 @@ const SignupPage = () => {
         </div>
       </div>
 
-      {/* Signup Box */}
+      {/* Signup Form */}
       <div className="flex w-full lg:w-2/3 items-center justify-center p-7">
         <div className="w-full max-w-2xl rounded-3xl bg-[#FFE660] p-10 shadow-lg">
           <h2 className="mb-6 text-center text-3xl font-bold text-gray-800">
@@ -167,7 +189,7 @@ const SignupPage = () => {
               />
             </div>
 
-            {/* Phone number */}
+            {/* Phone */}
             <input
               type="tel"
               name="phone"
@@ -197,7 +219,7 @@ const SignupPage = () => {
               className="w-full rounded-md border border-gray-400 p-2 bg-[#BAE8E8]"
             />
 
-            {/* Terms of Use */}
+            {/* Terms */}
             <div className="flex items-start gap-2 text-sm">
               <input
                 type="checkbox"
@@ -215,7 +237,7 @@ const SignupPage = () => {
               </p>
             </div>
 
-            {/* Submit Button */}
+            {/* Button */}
             <button
               type="submit"
               className="w-full rounded-md bg-[#2C275C] py-2 font-semibold text-white hover:bg-[#1b163e] transition"
