@@ -50,8 +50,6 @@ export default function LoginPage() {
   };
 
   return (
-    
-
     <div className="flex flex-col-reverse lg:flex-row bg-cover min-h-screen lg:items-center pt-12 pb-35 lg:pt-10 lg:pb-10" style={{ backgroundImage: `url(${bg})` }}>
       {/* Login Panel */}
 
