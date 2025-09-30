@@ -34,8 +34,9 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!validateForm()) {
-      setShowAlert(true);
+      setAlertMessage("Please enter valid email and password"); // instead of setShowAlert
       return;
     }
 
@@ -49,16 +50,18 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        setShowAlert(false);
+        setAlertMessage(""); // clear message
         navigate("/home");
       } else {
-        setShowAlert(true);
+        setAlertMessage("Invalid email or password");
       }
     } catch (error) {
       console.error("Login error:", error);
-      setShowAlert(true);
+      setAlertMessage("Server error. Try again later.");
     }
+
   };
+
 
 
   return (
