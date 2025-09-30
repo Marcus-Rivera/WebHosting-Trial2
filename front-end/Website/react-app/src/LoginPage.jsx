@@ -34,33 +34,35 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) {
 
+    if (!validateForm()) {
+      setAlertMessage("Please enter valid email and password"); // instead of setShowAlert
       return;
     }
 
     try {
-      const response = await fetch("http://localhost/TaraTrabaho-Secure-AI-Powered-Assistant-for-Resume-Creation-and-Job-Matching/back-end/login.php", {
+      const response = await fetch("http://localhost:5000/api/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
       });
 
       const data = await response.json();
 
-      if (data.status === "success") {
-        setAlertMessage("");
-        navigate("/home"); // ✅ redirect to home page
+      if (response.ok && data.success) {
+        setAlertMessage(""); // clear message
+        navigate("/home");
       } else {
-        setAlertMessage(data.message || "Invalid email or password.");
+        setAlertMessage("Invalid email or password");
       }
     } catch (error) {
-      console.error("Error:", error);
-      setAlertMessage("Something went wrong. Please try again.");
+      console.error("Login error:", error);
+      setAlertMessage("Server error. Try again later.");
     }
+
   };
+
+
 
   return (
     <div
