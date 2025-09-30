@@ -1,6 +1,6 @@
 <?php
 // db.php
-$host = "localhost";     // database host (XAMPP/MAMP usually localhost)
+$host = "127.0.0.1";     // database host (XAMPP/MAMP usually localhost)
 $user = "root";          // MySQL username (default is root in XAMPP)
 $pass = "";              // MySQL password (default empty in XAMPP)
 $dbname = "tratrabaho"; // your database name
