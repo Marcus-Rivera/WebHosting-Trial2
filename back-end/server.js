@@ -4,7 +4,7 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 
 const app = express();
-const db = new sqlite3.Database("./tratrabaho.sqlite");
+const db = new sqlite3.Database("tratrabaho.db");
 
 app.use(cors());
 app.use(bodyParser.json());
