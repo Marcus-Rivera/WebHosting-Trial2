@@ -56,10 +56,16 @@ const SignupPage = () => {
     e.preventDefault();
     if (validateForm()) {
       try {
-        const response = await fetch("http://localhost/TaraTrabaho-Secure-AI-Powered-Assistant-for-Resume-Creation-and-Job-Matching/back-end/sign_up.php", {
+        // Combine firstname and lastname into 'name'
+        const payload = {
+          ...form,
+          name: `${form.firstname.trim()} ${form.lastname.trim()}`,
+        };
+
+        const response = await fetch("http://localhost:5000/api/signup", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
+          body: JSON.stringify(payload),
         });
 
         const result = await response.json();
@@ -86,6 +92,7 @@ const SignupPage = () => {
       setTimeout(() => setShowAlert(false), 3000);
     }
   };
+
 
   return (
     <div
