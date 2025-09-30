@@ -14,13 +14,13 @@ import { href } from "react-router-dom";
 const SidebarContent = ({ active, setActive }) => (
   <div className="flex flex-col w-64 h-full px-4 py-8 overflow-y-auto bg-white dark:bg-[#BAE8E8] dark:border-gray-700">
     {/* Logo */}
-    <a href="#" className="mx-auto">
+    {/* <a href="#" className="mx-auto">
       <img
         className="w-auto h-6 sm:h-7"
         src="https://merakiui.com/images/full-logo.svg"
         alt="logo"
       />
-    </a>
+    </a> */}
 
     {/* Profile */}
     <div className="flex flex-col items-center mt-6 -mx-2">
@@ -42,7 +42,7 @@ const SidebarContent = ({ active, setActive }) => (
           className={`flex items-center px-4 py-2 rounded-lg cursor-pointer ${
             active === "profile"
               ? "bg-[#FBDA23] text-[#272343] font-bold"
-              : "text-[#272343] hover:bg-[#FBDA23] hover:text-gray-700"
+              : "text-[#272343] hover:bg-[#FBDA23]/38 hover:text-gray-700"
           }`}
         >
           <PersonIcon className="w-5 h-5" />
@@ -55,7 +55,7 @@ const SidebarContent = ({ active, setActive }) => (
           className={`flex items-center px-4 py-2 mt-5 rounded-lg cursor-pointer ${
             active === "dashboard" && <DashboardSection/>
               ? "bg-[#FBDA23] text-[#272343] font-bold"
-              : "text-[#272343] hover:bg-[#FBDA23] hover:text-gray-700"
+              : "text-[#272343] hover:bg-[#FBDA23]/38 hover:text-gray-700"
             
           }`}
         >
@@ -68,7 +68,7 @@ const SidebarContent = ({ active, setActive }) => (
           className={`flex items-center px-4 py-2 mt-5 rounded-lg cursor-pointer ${
             active === "careerbot"
               ? "bg-[#FBDA23] text-[#272343] font-bold"
-              : "text-[#272343] hover:bg-[#FBDA23] hover:text-gray-700"
+              : "text-[#272343] hover:bg-[#FBDA23]/38 hover:text-gray-700"
           }`}
         >
           <WorkOutlineOutlinedIcon className="w-5 h-5" />
@@ -80,7 +80,7 @@ const SidebarContent = ({ active, setActive }) => (
           className={`flex items-center px-4 py-2 mt-5 rounded-lg cursor-pointer ${
             active === "resumes"
               ? "bg-[#FBDA23] text-[#272343] font-bold"
-              : "text-[#272343] hover:bg-[#FBDA23] hover:text-gray-700"
+              : "text-[#272343] hover:bg-[#FBDA23]/38 hover:text-gray-700"
           }`}
         >
           <AssignmentIndIcon className="w-5 h-5" />
