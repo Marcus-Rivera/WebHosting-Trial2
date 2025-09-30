@@ -1,6 +1,7 @@
 import React from "react";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import StarIcon from '@mui/icons-material/Star';
+import joblogo from './assets/job_logo.png';
 
 const DashboardSection = () => {
   // Sample data for Job Recommendations
@@ -9,52 +10,61 @@ const DashboardSection = () => {
       title: "UI / UX Designer",
       company: "Innovition Solution",
       salary: "₱300-₱400",
+      logo: joblogo, 
     },
     {
       title: "UI / UX Designer",
       company: "Innovition Solution",
       salary: "₱300-₱400",
+      logo: joblogo, 
     },
     {
       title: "UI / UX Designer",
       company: "Innovition Solution",
       salary: "₱300-₱400",
+      logo: joblogo, 
     },
     {
       title: "UI / UX Designer",
       company: "Innovition Solution",
       salary: "₱300-₱400",
+      logo: joblogo, 
     },
     {
       title: "UI / UX Designer",
       company: "Innovition Solution",
       salary: "₱300-₱400",
+      logo: joblogo, 
     },
     {
       title: "UI / UX Designer",
       company: "Innovition Solution",
       salary: "₱300-₱400",
+      logo: joblogo, 
     },
   ];
 
   return (
     <div className="flex-1 p-8 overflow-y-auto bg-white">
       {/* Header */}
-      <h1 className="text-2xl font-bold text-[#272343] mb-2">DASHBOARD</h1>
-      <p className="text-[#272343] font-bold mb-6">
+      <h1 className="text-3xl lg:text-4xl font-bold text-[#272343] mb-4">DASHBOARD</h1>
+
+      <p className="text-[#272343] text-2xl ml-5 font-bold">
         Hi there! <span className="wave">👋</span>
         <br />
+        </p>
+      <p className="text-[#272343]/77 mb-6 ml-5 font-bold">
         Here's your overview for today
       </p>
 
       {/* Overview cards */}
-      <div className="flex gap-4 mb-8">
+      <div className="flex flex-col md:flex-row gap-4 mb-8">
         <div className="flex-1 bg-[#FFE660] rounded-4xl p-4 flex items-center gap-3">
           <div className="bg-[#BAE8E8] p-3 rounded-lg flex items-center justify-center">
             <svg
                 xmlns="http://www.w3.org/2000/svg"
-                width="28"
-                height="28"
+                width="24"
+                height="24"
                 viewBox="0 0 24 24"
                 className="text-black flex-shrink-0"
               >
@@ -66,7 +76,7 @@ const DashboardSection = () => {
             </div>
             {/* Text block */}
             <div className="flex flex-col">
-              <div className="text-2xl font-bold mt-1 text-[#272343]">5 Application</div>
+              <div className="text-lg xl:text-2xl font-bold mt-1 text-[#272343]">5 Application</div>
               <div className="text-sm font-semibold text-[#272343]/77">Application Submitted</div>
           </div>
         </div>
@@ -74,8 +84,8 @@ const DashboardSection = () => {
           <div className="bg-[#BAE8E8] p-3 rounded-lg flex items-center justify-center">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="30"
-              height="30"
+              width="26"
+              height="26"
               viewBox="0 0 16 16"
               className="text-black flex-shrink-0"
             >
@@ -96,41 +106,53 @@ const DashboardSection = () => {
             </svg>
           </div>
           <div className="flex flex-col">
-          <div className="text-2xl font-bold mt-1 text-[#272343]">4 Resume</div>
+          <div className="text-lg xl:text-2xl font-bold mt-1 text-[#272343]">4 Resume</div>
               <div className="text-sm font-semibold text-[#272343]/77">Resume Generated</div>
           </div>
         </div>
         <div className="flex-1 bg-[#FFE660] rounded-4xl p-4 flex items-center gap-3">
           <div className="bg-[#BAE8E8] p-3 rounded-lg flex items-center justify-center">
-            <StarIcon className="text-[#272343]" style={{ fontSize: 33 }} />
+            <StarIcon className="text-[#272343]" style={{ fontSize: 26 }} />
           </div>
           <div className="flex flex-col">
-            <div className="text-2xl font-bold mt-1 text-[#272343]">3 Matches</div>
+            <div className="text-lg xl:text-2xl font-bold mt-1 text-[#272343]">3 Matches</div>
             <div className="text-sm font-semibold text-[#272343]/77">Job Matches</div>
           </div>
         </div>
       </div>
 
       {/* Job Recommendations */}
-      <h2 className="text-xl font-bold text-[#272343] mb-4">Job Recommendation</h2>
+      <h2 className="text-2xl font-bold text-[#272343] mb-4">Job Recommendation</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {jobRecommendations.map((job, index) => (
           <div
             key={index}
-            className="border rounded-lg p-4 flex justify-between items-center"
+            className="border p-4 flex justify-between items-center"
           >
+          {/* Logo section */}
+           <div className="flex items-center gap-3">
+            <div className="w-16 h-16 flex items-center justify-center">
+              <img
+                src={job.logo} 
+                alt={`${job.company} logo`}
+                className="w-20 h-20 md:w-82 md:h-76 object-contain"
+              />
+            </div>
+              
+              
             <div>
               <h3 className="font-semibold text-[#272343]">{job.title}</h3>
               <p className="text-sm text-gray-600">{job.company}</p>
               <p className="text-sm text-green-600">{job.salary}</p>
             </div>
-            <div className="flex flex-col items-end gap-2">
-              <button className="px-3 py-1 bg-green-600 text-white text-sm rounded">
-                Apply
-              </button>
-              <OpenInNewIcon className="text-gray-400" />
-            </div>
           </div>
+          <div className="flex flex-col items-end gap-2">
+            <button className="px-3 py-1 bg-green-600 text-white text-sm rounded">
+              Apply
+            </button>
+            <OpenInNewIcon className="text-gray-400" />
+          </div>
+        </div>
         ))}
       </div>
     </div>

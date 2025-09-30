@@ -110,14 +110,14 @@ const Home = () => {
   return (
     <div className="flex h-screen bg-white">
       {/* Mobile toggle button */}
-      <div className="absolute top-4 left-4 md:hidden z-50">
+      <div className="absolute top-4 left-4 lg:hidden z-50">
         <IconButton onClick={() => setOpen(true)}>
           <MenuIcon />
         </IconButton>
       </div>
 
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex">
+      <div className="hidden lg:flex">
         <SidebarContent active={active} setActive={setActive} />
       </div>
 
