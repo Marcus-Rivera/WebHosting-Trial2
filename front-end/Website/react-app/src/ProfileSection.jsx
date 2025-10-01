@@ -4,12 +4,13 @@ import SkillsSection from "./SkillsSections";
 
 const ProfileSection = () => {
   return (
-    <main className="flex-1 p-8 bg-white overflow-y-auto">
+    <main className="flex-1 lg:p-8 bg-white overflow-y-auto">
       <h1 className="text-2xl font-bold text-center text-[#272343] mb-6">
         PROFILE
       </h1>
 
       <div className="bg-[rgba(251,218,35,0.39)] rounded-[40px] p-8 flex flex-col md:flex-row gap-8">
+        
         {/* Left Profile Info */}
         <div className="flex flex-col items-center w-full md:w-1/3">
           <div className="w-40 h-40 rounded-full bg-gray-200 flex items-center justify-center">
@@ -19,8 +20,8 @@ const ProfileSection = () => {
           <p className="text-sm text-[#272343] font-semibold">
             Rebecca@gmail.com
           </p>
-          <p className="text-sm text-gray-600">UI Designer</p>
-
+          <p className="text-sm text-[#6E090B] font-bold">UI Designer</p>
+          
           {/* Skills Section */}
           <SkillsSection />
         </div>
@@ -129,10 +130,10 @@ const ProfileSection = () => {
 
           {/* Buttons */}
           <div className="flex gap-4 mt-6">
-            <button className="px-6 py-2 bg-[#272343] text-white rounded">
+            <button className="px-6 py-2 bg-[#272343] text-white rounded-xl">
               Save
             </button>
-            <button className="px-6 py-2 bg-[#272343] text-white rounded">
+            <button className="px-6 py-2 bg-[#272343] text-white rounded-xl">
               Edit
             </button>
           </div>
