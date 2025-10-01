@@ -7,7 +7,7 @@ const ManageUser = () => {
 
 
   //cd C:\Users\user\Downloads\APP\GIT\its120 project\ITS120L_BM2_Grp7\front-end\Website\react-app\src
-  // Sample user data with status and actions
+  // Sample user data with status and actions bababa
   const [users, setUsers] = useState([
     { id: 1, username: "Rebbeca", email: "Rebeca@gmail.com", status: "Approved", action: "Approved" },
     { id: 2, username: "John Doe", email: "Joe@gmail.com", status: "Suspend", action: "Suspend" },
