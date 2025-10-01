@@ -122,7 +122,7 @@ const LandingPage = () => {
                 <button onClick={() => { setContactOpen(true); setIsOpen(false); }} className="block hover:text-yellow-400">
                 Contact
                 </button>
-                <a href="/faqs" className="block hover:text-yellow-400">FAQs</a>
+                <a href="/Faqs" className="block hover:text-yellow-400">FAQs</a>
             </div>
             )}
         </nav>

@@ -78,12 +78,7 @@ const ManageUser = () => {
         </table>
       </div>
 
-      {/* Logout Button */}
-      <div className="mt-8">
-        <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors duration-300">
-          Logout
-        </button>
-      </div>
+      
     </div>
   );
 };
