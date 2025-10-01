@@ -158,7 +158,7 @@ const Home = () => {
       </Drawer>
 
       {/* Main Content */}
-      <main className="flex-1 bg-white  overflow-y-auto">
+      <main className="flex-1 pl-4 bg-white  overflow-y-auto">
          {active === "profile" && <ProfileSection />}
          {active === "dashboard" && <DashboardSection />}
          {active === "resumes" && <ResumeSection />}

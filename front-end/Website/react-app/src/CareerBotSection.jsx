@@ -31,7 +31,7 @@ const CareerBotSection = () => {
   }, [messages]);
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-white">
+    <div className="flex flex-col h-screen overflow-hidden pt-5 bg-white">
       {/* Chat Messages (scrolls only when full) */}
       <div className="flex-1 overflow-y-auto p-6">
         {messages.map((msg, index) => (
