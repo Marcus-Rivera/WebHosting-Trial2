@@ -38,6 +38,7 @@ const SidebarContent = ({ active, setActive }) => (
 
         {/* Profile Setup */}
         <a
+
           onClick={() => setActive("profile")}
           className={`flex items-center px-4 py-2 rounded-lg cursor-pointer ${
             active === "profile"

@@ -118,7 +118,7 @@ export default function LoginPage() {
             {/* Submit */}
             <button
               type="submit"
-              className="block px-6 mx-auto rounded-md bg-[#2C275C] py-2 font-semibold text-white transition hover:bg-[#1b163e]"
+              className="block px-6 mx-auto rounded-md bg-[#2C275C] py-2 font-semibold text-white transition hover:bg-[#1b163e] cursor-pointer"
             >
               Trabaho Na!
             </button>
@@ -137,7 +137,14 @@ export default function LoginPage() {
       <div className="flex w-full lg:w-1/2 justify-center lg:justify-end p-8 lg:items-center">
         <div className="text-center lg:text-right text-[#272343] p-2">
           <h3 className="text-3xl">Welcome Back to</h3>
-          <h1 className="text-5xl xl:text-7xl font-inter font-bold mb-4">TaraTRABAHO</h1>
+          {/* <h1 className="text-5xl xl:text-7xl font-inter font-bold mb-4">TaraTRABAHO</h1> */}
+
+          <h1 className="text-5xl lg:text-7xl font-inter font-bold mt-5 mb-4 italic text-[#272343] animate-bounce">
+              Tara
+              <span className="text-yellow-400 drop-shadow-[2px_2px_0px_black] italic">
+                Trabaho!
+              </span>
+            </h1>
           <p className="text-lg mb-4">Sign in to access your dashboard and start your journey with us.</p>
           <h4 className="font-bold">Login With</h4>
 

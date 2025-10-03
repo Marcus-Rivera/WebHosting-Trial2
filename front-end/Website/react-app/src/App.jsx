@@ -9,7 +9,10 @@ import OtpPage from "./OtpPage";
 import AboutUsPage from "./AboutUsPage";
 import ManageUser from "./ManageUser";
 import JobListing from "./JobListing";
-import Profile from "./ProfileSection";
+import DashboardSection from "./DashboardSection";
+import ProfileSection from "./ProfileSection";
+import ResumeSection from "./ResumeSection";
+import CareerBotSection from "./CareerBotSection";
 
 function App() {
   return (
@@ -18,12 +21,16 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
-        <Route path="/home" element={<Home />} />
+        <Route path="/taratrabaho" element={<Home />} />
         <Route path="/HomeAdmin" element={<HomeAdmin />} />
         <Route path="/otp" element={<OtpPage />} />
         <Route path="/about" element={<AboutUsPage />} />
         <Route path="/ManageUser" element={<ManageUser />} />
         <Route path="/JobListing" element={<JobListing />} />
+        <Route path="/dashboard" element={<DashboardSection />} />
+        <Route path="/profile" element={<ProfileSection />} />
+        <Route path="/resumes" element={<ResumeSection />} />
+        <Route path="/careerbot" element={<CareerBotSection />} />
 
         <Route path="*" element={<h1>404 Not Found</h1>} />
       </Routes>

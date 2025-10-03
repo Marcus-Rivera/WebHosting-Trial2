@@ -93,20 +93,20 @@ const LandingPage = () => {
         style={{ backgroundImage: `url(${bg})` }}
         >
         {/* NAVBAR */}
-        <nav className="fixed top-0 left-0 w-full bg-[#272343] text-white shadow-md z-50">
+        <nav className="fixed top-0 left-0 w-full text-[#272343]  shadow-md z-50">
             <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
             <h1 className="text-2xl font-bold italic">
-                Tara<span className="text-yellow-400">Trabaho!</span>
+                Tara<span className="text-yellow-400 drop-shadow-[2px_2px_0px_black]">Trabaho!</span>
             </h1>
-            <ul className="hidden md:flex gap-8 font-semibold">
-                <li><a href="/" className="hover:text-yellow-400">Home</a></li>
-                <li><a href="/about" className="hover:text-yellow-400">About Us</a></li>
+            <ul className="hidden md:flex gap-8 font-bold">
+                <li><a href="/" className="hover:text-yellow-400 underline">Home</a></li>
+                <li><a href="/about" className="hover:text-yellow-400 underline">About Us</a></li>
                 <li>
-                <button onClick={() => setContactOpen(true)} className="hover:text-yellow-400">
+                <button onClick={() => setContactOpen(true)} className="hover:text-yellow-400 underline">
                     Contact
                 </button>
                 </li>
-                <li><a href="/faqs" className="hover:text-yellow-400">FAQs</a></li>
+                <li><a href="/faqs" className="hover:text-yellow-400 underline">FAQs</a></li>
             </ul>
             <button
                 className="md:hidden text-2xl"
@@ -116,7 +116,7 @@ const LandingPage = () => {
             </button>
             </div>
             {isOpen && (
-            <div className="md:hidden bg-[#272343] text-white px-4 py-3 space-y-3">
+            <div className="md:hidden bg-[#272343] text-white font-bold px-4 py-3 space-y-3">
                 <a href="/" className="block hover:text-yellow-400">Home</a>
                 <a href="/about" className="block hover:text-yellow-400">About Us</a>
                 <button onClick={() => { setContactOpen(true); setIsOpen(false); }} className="block hover:text-yellow-400">
