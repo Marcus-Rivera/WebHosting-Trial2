@@ -25,17 +25,17 @@ const ContactModal = ({ isOpen, onClose }) => {
             <input
               type="text"
               placeholder="Fullname"
-              className="w-full px-3 py-2 border rounded-md focus:outline-none"
+              className="w-full px-3 py-2 border rounded-md focus:outline-none bg-white font-bold"
             />
             <input
               type="email"
               placeholder="Email"
-              className="w-full px-3 py-2 border rounded-md focus:outline-none"
+              className="w-full px-3 py-2 border rounded-md focus:outline-none bg-white font-bold"
             />
             <textarea
               placeholder="Message"
               rows="4"
-              className="w-full px-3 py-2 border rounded-md focus:outline-none"
+              className="w-full px-3 py-2 border rounded-md focus:outline-none bg-white font-bold"
             ></textarea>
             <button
               type="submit"
