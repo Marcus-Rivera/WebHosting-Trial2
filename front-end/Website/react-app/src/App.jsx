@@ -13,6 +13,7 @@ import DashboardSection from "./DashboardSection";
 import ProfileSection from "./ProfileSection";
 import ResumeSection from "./ResumeSection";
 import CareerBotSection from "./CareerBotSection";
+import ForgetPage from "./ForgetPage";
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
         <Route path="/profile" element={<ProfileSection />} />
         <Route path="/resumes" element={<ResumeSection />} />
         <Route path="/careerbot" element={<CareerBotSection />} />
+        <Route path="/forget" element={<ForgetPage />} />
 
         <Route path="*" element={<h1>404 Not Found</h1>} />
       </Routes>

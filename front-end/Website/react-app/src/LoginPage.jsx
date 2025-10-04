@@ -125,9 +125,14 @@ export default function LoginPage() {
           </form>
 
           {/* Extra Links */}
-          <p className="mt-6 text-center text-sm text-gray-600">
-            <a href="/Signup" className="text-black font-bold underline hover:underline">
+          <p className="mt-6  mb-1 text-center text-sm">
+            <a href="/Signup" className="text-[#272343] font-bold underline hover:underline">
               Don’t have an account? Sign up
+            </a>
+          </p>
+          <p className="text-center text-sm">
+            <a href="/Forget" className="text-[#272343] font-bold underline hover:underline">
+              Forget Password?
             </a>
           </p>
         </div>
