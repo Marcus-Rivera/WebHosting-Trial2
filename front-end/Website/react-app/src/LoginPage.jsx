@@ -51,7 +51,7 @@ export default function LoginPage() {
 
       if (response.ok && data.success) {
         setAlertMessage(""); // clear message
-        navigate("/home");
+        navigate("/taratrabaho");
       } else {
         setAlertMessage("Invalid email or password");
       }
