@@ -3,6 +3,65 @@ import { useNavigate } from "react-router-dom";
 import bg from "./assets/BG.png";
 import { Alert } from "@mui/material";
 
+// Terms Modal Component
+const TermsModal = ({ isOpen, onClose, form, setForm }) => {
+  if (!isOpen) return null;
+
+  const handleAgreeChange = (e) => {
+    setForm((prev) => ({ ...prev, agree: e.target.checked }));
+  };
+
+  return (
+    <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-[#FFE660] rounded-lg shadow-lg p-6 w-[90%] max-w-3xl relative">
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-[#272343] text-xl cursor-pointer"
+        >
+          ✕
+        </button>
+
+        <h2 className="text-2xl font-bold mb-6 text-center text-[#272343]">
+          Terms and Conditions
+        </h2>
+
+        <div className="bg-white border rounded-md p-4 max-h-[300px] overflow-y-auto text-sm text-gray-800">
+          <p>
+            By using TaraTrabaho: Secure AI-Powered Assistant for Resume Creation
+            and Job Matching, you agree to our Terms and Conditions. Users must
+            provide accurate information and are responsible for keeping their
+            account details secure. TaraTrabaho offers free and premium services,
+            including AI-powered resume creation, job matching, and application
+            features, but does not guarantee employment results. All personal data
+            is protected through encryption, password hashing, and OTP
+            authentication, and will only be shared with employers when you apply
+            to their postings. Users must not submit false information, engage in
+            fraudulent activities, or misuse the platform. TaraTrabaho is not
+            liable for employer hiring decisions or service interruptions, and use
+            of the platform is at your own risk. Premium features may require
+            payment, and refunds follow our stated policies. We reserve the right
+            to suspend or terminate accounts that violate these terms. By
+            continuing to use the platform, you accept any updates to these Terms
+            and Conditions. For assistance or questions, you may reach us through
+            our Support page or official contact email.
+          </p>
+        </div>
+
+        {/* Checkbox + Agree */}
+        <div className="flex items-center mt-4 gap-2">
+          <input
+            type="checkbox"
+            checked={form.agree}
+            onChange={handleAgreeChange}
+          />
+          <label className="text-sm">I Agree</label>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const SignupPage = () => {
   const navigate = useNavigate();
 
@@ -23,6 +82,7 @@ const SignupPage = () => {
   const [showAlert, setShowAlert] = useState(false);
   const [alertMsg, setAlertMsg] = useState("");
   const [alertType, setAlertType] = useState("error");
+  const [termsOpen, setTermsOpen] = useState(false); // terms modal state
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -56,7 +116,6 @@ const SignupPage = () => {
     e.preventDefault();
     if (validateForm()) {
       try {
-        // Combine firstname and lastname into 'name'
         const payload = {
           ...form,
           name: `${form.firstname.trim()} ${form.lastname.trim()}`,
@@ -92,7 +151,6 @@ const SignupPage = () => {
       setTimeout(() => setShowAlert(false), 3000);
     }
   };
-
 
   return (
     <div
@@ -237,9 +295,13 @@ const SignupPage = () => {
               <p>
                 By clicking <span className="font-bold">"Sign Up"</span> I agree
                 that I have read and accept the{" "}
-                <a href="#" className="text-blue-600 underline">
+                <button
+                  type="button"
+                  onClick={() => setTermsOpen(true)}
+                  className="text-blue-600 underline"
+                >
                   Terms of Use
-                </a>
+                </button>
                 .
               </p>
             </div>
@@ -262,6 +324,14 @@ const SignupPage = () => {
           </form>
         </div>
       </div>
+
+      {/* Terms Modal */}
+      <TermsModal 
+        isOpen={termsOpen} 
+        onClose={() => setTermsOpen(false)} 
+        form={form} 
+        setForm={setForm} 
+      />
     </div>
   );
 };

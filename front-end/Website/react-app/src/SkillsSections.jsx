@@ -48,7 +48,7 @@ const SkillsSection = () => {
         />
         <button
           onClick={handleAddSkill}
-          className="px-3 py-1 bg-white rounded shadow text-sm font-bold"
+          className="px-3 py-1 bg-white rounded shadow text-sm font-bold whitespace-nowrap"
         >
           + Add
         </button>

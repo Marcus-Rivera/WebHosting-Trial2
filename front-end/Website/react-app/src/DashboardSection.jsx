@@ -42,10 +42,53 @@ const DashboardSection = () => {
       salary: "₱300-₱400",
       logo: joblogo, 
     },
+    {
+      title: "UI / UX Designer",
+      company: "Innovition Solution",
+      salary: "₱300-₱400",
+      logo: joblogo, 
+    },
+    {
+      title: "UI / UX Designer",
+      company: "Innovition Solution",
+      salary: "₱300-₱400",
+      logo: joblogo, 
+    },
+    {
+      title: "UI / UX Designer",
+      company: "Innovition Solution",
+      salary: "₱300-₱400",
+      logo: joblogo, 
+    },
+    {
+      title: "UI / UX Designer",
+      company: "Innovition Solution",
+      salary: "₱300-₱400",
+      logo: joblogo, 
+    },
+    {
+      title: "UI / UX Designer",
+      company: "Innovition Solution",
+      salary: "₱300-₱400",
+      logo: joblogo, 
+    },
+    {
+      title: "UI / UX Designer",
+      company: "Innovition Solution",
+      salary: "₱300-₱400",
+      logo: joblogo, 
+    },
+    {
+      title: "UI / UX Designer",
+      company: "Innovition Solution",
+      salary: "₱300-₱400",
+      logo: joblogo, 
+    },
+
   ];
 
   return (
-    <div className="flex-1 p-8 overflow-y-auto bg-white">
+    <div className="flex-1 p-8 bg-white">
       {/* Header */}
       <h1 className="text-3xl lg:text-4xl font-bold text-[#272343] mb-4">DASHBOARD</h1>
 
@@ -123,7 +166,7 @@ const DashboardSection = () => {
 
       {/* Job Recommendations */}
       <h2 className="text-2xl font-bold text-[#272343] mb-4">Job Recommendation</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {jobRecommendations.map((job, index) => (
           <div
             key={index}
@@ -146,8 +189,9 @@ const DashboardSection = () => {
               <p className="text-sm text-green-600">{job.salary}</p>
             </div>
           </div>
-          <div className="flex flex-col items-end gap-2">
-            <button className="px-3 py-1 bg-green-600 text-white text-sm rounded">
+          {/* Apply button */}
+          <div className="flex  items-end gap-2">
+            <button className="px-3 py-1 bg-green-600 text-white text-sm rounded mr-2">
               Apply
             </button>
             <OpenInNewIcon className="text-gray-400" />

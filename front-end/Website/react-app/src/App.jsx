@@ -10,7 +10,6 @@ import AboutUsPage from "./AboutUsPage";
 import ManageUser from "./ManageUser";
 import JobListing from "./JobListing";
 import Profile from "./ProfileSection";
-import Faqs from "./Faqs";
 
 function App() {
   return (
@@ -19,13 +18,13 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
-        <Route path="/home" element={<Home />} />
+        <Route path="/taratrabaho" element={<Home />} />
         <Route path="/HomeAdmin" element={<HomeAdmin />} />
         <Route path="/otp" element={<OtpPage />} />
         <Route path="/about" element={<AboutUsPage />} />
         <Route path="/ManageUser" element={<ManageUser />} />
         <Route path="/JobListing" element={<JobListing />} />
-        <Route path="/Faqs" element={<Faqs />} />
+
         <Route path="*" element={<h1>404 Not Found</h1>} />
       </Routes>
     </Router>
