@@ -1,38 +1,39 @@
 import React, { useState } from "react";
 import bg from "./assets/BG.png"; // ✅ background image
 import { FaBars, FaTimes } from "react-icons/fa";
+import { FaFacebook, FaInstagram } from "react-icons/fa"; // socials
 
 const Faqs = () => {
   const [isOpen, setIsOpen] = useState(false); // for mobile menu
   const [activeIndex, setActiveIndex] = useState(null); // track open FAQ
+  const [contactOpen, setContactOpen] = useState(false); // for contact modal
 
   // ✅ FAQ items (EDIT THIS PART to change questions & answers)
   const faqs = [
     {
       question: "Wala ako pera pambayad subscription",
-      answer:
-        "Contact Kayle Matthew Calagui. "
+      answer: "Contact Kayle Matthew Calagui. ",
     },
     {
       question: "How can I reset my password?",
       answer:
-        "If you need to reset your TaraTrabaho account password, simply click on the 'Forgot Password?' link on the login page and enter the email address associated with your account. You will receive a One-Time Password (OTP) or a reset link in your email. Use the OTP or follow the link to create a new password. Once updated, you can log in again using your new credentials. For security, we recommend choosing a strong password and keeping it private."
+        "If you need to reset your TaraTrabaho account password, simply click on the 'Forgot Password?' link on the login page and enter the email address associated with your account. You will receive a One-Time Password (OTP) or a reset link in your email. Use the OTP or follow the link to create a new password. Once updated, you can log in again using your new credentials. For security, we recommend choosing a strong password and keeping it private.",
     },
     {
       question: "How do I contact support?",
       answer:
-        "You can reach our support team by clicking on the Contact option in the navigation bar or by sending an email to support@taratrabaho.com."
+        "You can reach our support team by clicking on the Contact option in the navigation bar or by sending an email to support@taratrabaho.com.",
     },
     {
       question: "Is my personal data secure?",
       answer:
-        "Yes, we prioritize your privacy and security. All personal data is encrypted and handled in compliance with data protection laws."
+        "Yes, we prioritize your privacy and security. All personal data is encrypted and handled in compliance with data protection laws.",
     },
     {
       question: "How does the AI Resume Builder work?",
       answer:
-        "Our AI Resume Builder helps you create professional resumes quickly by guiding you step-by-step and suggesting improvements to your content."
-    }
+        "Our AI Resume Builder helps you create professional resumes quickly by guiding you step-by-step and suggesting improvements to your content.",
+    },
   ];
 
   // Toggle accordion
@@ -40,12 +41,19 @@ const Faqs = () => {
     setActiveIndex(activeIndex === index ? null : index);
   };
 
+  // Handle overlay click (click outside modal to close)
+  const handleOverlayClick = (e) => {
+    if (e.target === e.currentTarget) {
+      setContactOpen(false);
+    }
+  };
+
   return (
     <div
       className="bg-cover min-h-screen flex flex-col"
       style={{ backgroundImage: `url(${bg})` }}
     >
-      {/* NAVBAR (same design as AboutUsPage) */}
+      {/* NAVBAR */}
       <nav className="fixed top-0 left-0 w-full bg-[#272343] text-white shadow-md z-50">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
           <h1 className="text-2xl font-bold italic">
@@ -59,13 +67,16 @@ const Faqs = () => {
             </li>
             <li>
               <a href="/about" className="hover:text-yellow-400">
-                About us
+                About Us
               </a>
             </li>
             <li>
-              <a href="/contact" className="hover:text-yellow-400">
+              <button
+                onClick={() => setContactOpen(true)}
+                className="hover:text-yellow-400"
+              >
                 Contact
-              </a>
+              </button>
             </li>
             <li>
               <a href="/faqs" className="hover:text-yellow-400">
@@ -88,17 +99,100 @@ const Faqs = () => {
               Home
             </a>
             <a href="/about" className="block hover:text-yellow-400">
-              About us
+              About Us
             </a>
-            <a href="/contact" className="block hover:text-yellow-400">
+            <button
+              onClick={() => setContactOpen(true)}
+              className="block hover:text-yellow-400 w-full text-left"
+            >
               Contact
-            </a>
+            </button>
             <a href="/faqs" className="block hover:text-yellow-400">
               FAQs
             </a>
           </div>
         )}
       </nav>
+
+      {/* ✅ Contact Modal (No dark background) */}
+      {contactOpen && (
+        <div 
+          className="fixed inset-0 flex items-center justify-center z-50"
+          onClick={handleOverlayClick}
+        >
+          <div className="bg-yellow-400 rounded-lg p-6 w-full max-w-3xl relative shadow-2xl">
+            {/* Close Button */}
+            <button
+              onClick={() => setContactOpen(false)}
+              className="absolute top-3 right-3 text-2xl font-bold text-[#272343] hover:text-black"
+            >
+              ×
+            </button>
+
+            <h2 className="text-2xl font-bold text-center text-[#272343] mb-6">
+              Contact Us
+            </h2>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Left - Form */}
+              <form className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="Fullname"
+                  className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-[#272343]"
+                />
+                <input
+                  type="email"
+                  placeholder="Email"
+                  className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-[#272343]"
+                />
+                <textarea
+                  placeholder="Message"
+                  rows="4"
+                  className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-[#272343]"
+                ></textarea>
+                <button
+                  type="submit"
+                  className="w-full bg-[#272343] text-white py-2 rounded-md hover:bg-[#1a1a2e] transition-colors font-semibold"
+                >
+                  Contact Us
+                </button>
+              </form>
+
+              {/* Right - Info */}
+              <div className="space-y-4 text-[#272343]">
+                <div>
+                  <strong className="text-lg">Contact</strong>
+                  <br />
+                  <span>TaraTrabaho@gmail.com</span>
+                </div>
+                <div>
+                  <strong className="text-lg">Based in</strong>
+                  <br />
+                  <em>Magsaysay Avenue, Makati</em>
+                </div>
+                <div>
+                  <strong className="text-lg">Socials</strong>
+                  <div className="flex gap-4 mt-2 text-2xl">
+                    <a
+                      href="#"
+                      className="text-blue-600 hover:text-blue-800 transition-colors"
+                    >
+                      <FaFacebook />
+                    </a>
+                    <a
+                      href="#"
+                      className="text-pink-600 hover:text-pink-800 transition-colors"
+                    >
+                      <FaInstagram />
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* FAQ CONTENT */}
       <div className="flex-1 flex flex-col items-center justify-center mt-20 px-4">
