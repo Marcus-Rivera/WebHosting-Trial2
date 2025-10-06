@@ -51,7 +51,7 @@ const ResumeSection = () => {
           filteredResumes.map((resume, index) => (
             <div
               key={index}
-              className="flex justify-between items-center bg-[#E6F6F6] border rounded px-4 py-3 relative"
+              className="flex justify-between items-center bg-[#E6F6F6] border rounded px-4 py-3 relative transition-all duration-200 hover:shadow-md"
             >
               <div className="flex items-center gap-3">
                 <DescriptionIcon className="text-black" />
@@ -71,12 +71,16 @@ const ResumeSection = () => {
                 {/* Dropdown Menu */}
                 {openMenu === index && (
                   <div className="absolute right-4 top-12 bg-white shadow-lg border rounded w-28 z-10">
+                    <button className="block w-full px-4 py-2 text-left text-sm text-green-500 hover:bg-gray-100 cursor-pointer">
+                      Preview
+                    </button>
                     <button className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100 cursor-pointer">
                       Edit
                     </button>
                     <button className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 cursor-pointer">
                       Delete
                     </button>
+                    
                   </div>
                 )}
               </div>

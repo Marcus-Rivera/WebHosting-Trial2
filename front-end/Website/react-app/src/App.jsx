@@ -9,7 +9,9 @@ import OtpPage from "./OtpPage";
 import AboutUsPage from "./AboutUsPage";
 import ManageUser from "./ManageUser";
 import JobListing from "./JobListing";
-import Profile from "./ProfileSection";
+import Faqs from "./Faqs";
+import Forget from "./ForgetPage";
+import Reset from "./ResetPassword";
 
 function App() {
   return (
@@ -24,6 +26,9 @@ function App() {
         <Route path="/about" element={<AboutUsPage />} />
         <Route path="/ManageUser" element={<ManageUser />} />
         <Route path="/JobListing" element={<JobListing />} />
+        <Route path="/Faqs" element={<Faqs />} />
+        <Route path="/Forget" element={<Forget />} />
+        <Route path="/Reset" element={<Reset />} />
 
         <Route path="*" element={<h1>404 Not Found</h1>} />
       </Routes>
