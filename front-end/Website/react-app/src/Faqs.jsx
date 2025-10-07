@@ -1,23 +1,108 @@
 import React, { useState } from "react";
-import bg from "./assets/BG.png"; // ✅ background image
-import { FaBars, FaTimes } from "react-icons/fa";
-import { FaFacebook, FaInstagram } from "react-icons/fa"; // socials
+import bg from "./assets/BG.png"; 
+import { FaBars, FaTimes, FaFacebookF, FaInstagram } from "react-icons/fa";
+
+const ContactModal = ({ isOpen, onClose }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="bg-yellow-300 rounded-lg shadow-lg p-6 w-[90%] max-w-3xl relative">
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-black text-xl cursor-pointer"
+        >
+          ✕
+        </button>
+
+        <h2 className="text-2xl font-bold mb-6 text-center text-[#272343]">
+          Contact Us
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Form */}
+          <form className="space-y-3">
+            <input
+              type="text"
+              placeholder="Fullname"
+              className="w-full px-3 py-2 border rounded-md focus:outline-none bg-white font-bold"
+            />
+            <input
+              type="email"
+              placeholder="Email"
+              className="w-full px-3 py-2 border rounded-md focus:outline-none bg-white font-bold"
+            />
+            <textarea
+              placeholder="Message"
+              rows="4"
+              className="w-full px-3 py-2 border rounded-md focus:outline-none bg-white font-bold"
+            ></textarea>
+            <button
+              type="submit"
+              className="w-full py-2 rounded-md bg-[#272343] text-white hover:bg-yellow-400 hover:text-black transition"
+            >
+              Contact Us
+            </button>
+          </form>
+
+          {/* Contact Info */}
+          <div className="space-y-4 text-[#272343] font-semibold">
+            <div>
+              <p className="font-bold">Contact</p>
+              <p className="text-sm">TaraTrabaho@gmail.com</p>
+            </div>
+            <div>
+              <p className="font-bold">Based in</p>
+              <p className="text-sm italic">Magsaysay Avenue, Makati</p>
+            </div>
+            <div>
+              <p className="font-bold">Socials</p>
+              <div className="flex gap-3 mt-1">
+                <a
+                  href="https://facebook.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:scale-110 transition"
+                >
+                  <FaFacebookF size={24} />
+                </a>
+                <a
+                  href="https://instagram.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-pink-500 hover:scale-110 transition"
+                >
+                  <FaInstagram size={24} />
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Faqs = () => {
   const [isOpen, setIsOpen] = useState(false); // for mobile menu
   const [activeIndex, setActiveIndex] = useState(null); // track open FAQ
   const [contactOpen, setContactOpen] = useState(false); // for contact modal
 
-  // ✅ FAQ items (EDIT THIS PART to change questions & answers)
   const faqs = [
     {
       question: "Wala ako pera pambayad subscription",
-      answer: "Contact Kayle Matthew Calagui. ",
+      answer: "Contact Kayle Matthew Calagui.",
     },
     {
       question: "How can I reset my password?",
       answer:
-        "If you need to reset your TaraTrabaho account password, simply click on the 'Forgot Password?' link on the login page and enter the email address associated with your account. You will receive a One-Time Password (OTP) or a reset link in your email. Use the OTP or follow the link to create a new password. Once updated, you can log in again using your new credentials. For security, we recommend choosing a strong password and keeping it private.",
+        "Click 'Forgot Password?' on the login page and enter your email. You'll receive an OTP or reset link to create a new password. For security, choose a strong password.",
     },
     {
       question: "How do I contact support?",
@@ -32,7 +117,7 @@ const Faqs = () => {
     {
       question: "How does the AI Resume Builder work?",
       answer:
-        "Our AI Resume Builder helps you create professional resumes quickly by guiding you step-by-step and suggesting improvements to your content.",
+        "Our AI Resume Builder helps you create professional resumes quickly by guiding you step-by-step and suggesting improvements.",
     },
   ];
 
@@ -41,45 +126,41 @@ const Faqs = () => {
     setActiveIndex(activeIndex === index ? null : index);
   };
 
-  // Handle overlay click (click outside modal to close)
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) {
-      setContactOpen(false);
-    }
-  };
-
   return (
     <div
       className="bg-cover min-h-screen flex flex-col"
       style={{ backgroundImage: `url(${bg})` }}
     >
       {/* NAVBAR */}
-      <nav className="fixed top-0 left-0 w-full bg-[#272343] text-white shadow-md z-50">
+      <nav className="fixed top-0 left-0 w-full text-[#272343] shadow-md z-50">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
           <h1 className="text-2xl font-bold italic">
-            Tara<span className="text-yellow-400">Trabaho!</span>
+            Tara
+            <span className="text-yellow-400 drop-shadow-[2px_2px_0px_black]">
+              Trabaho!
+            </span>
           </h1>
-          <ul className="hidden md:flex gap-8 font-semibold">
+          <ul className="hidden md:flex gap-8 font-bold">
             <li>
-              <a href="/" className="hover:text-yellow-400">
+              <a href="/" className="hover:text-yellow-400 underline">
                 Home
               </a>
             </li>
             <li>
-              <a href="/about" className="hover:text-yellow-400">
+              <a href="/about" className="hover:text-yellow-400 underline">
                 About Us
               </a>
             </li>
             <li>
               <button
                 onClick={() => setContactOpen(true)}
-                className="hover:text-yellow-400"
+                className="hover:text-yellow-400 underline"
               >
                 Contact
               </button>
             </li>
             <li>
-              <a href="/faqs" className="hover:text-yellow-400">
+              <a href="/faqs" className="hover:text-yellow-400 underline">
                 FAQs
               </a>
             </li>
@@ -102,8 +183,11 @@ const Faqs = () => {
               About Us
             </a>
             <button
-              onClick={() => setContactOpen(true)}
-              className="block hover:text-yellow-400 w-full text-left"
+              onClick={() => {
+                setContactOpen(true);
+                setIsOpen(false);
+              }}
+              className="block hover:text-yellow-400"
             >
               Contact
             </button>
@@ -113,86 +197,6 @@ const Faqs = () => {
           </div>
         )}
       </nav>
-
-      {/* ✅ Contact Modal (No dark background) */}
-      {contactOpen && (
-        <div 
-          className="fixed inset-0 flex items-center justify-center z-50"
-          onClick={handleOverlayClick}
-        >
-          <div className="bg-yellow-400 rounded-lg p-6 w-full max-w-3xl relative shadow-2xl">
-            {/* Close Button */}
-            <button
-              onClick={() => setContactOpen(false)}
-              className="absolute top-3 right-3 text-2xl font-bold text-[#272343] hover:text-black"
-            >
-              ×
-            </button>
-
-            <h2 className="text-2xl font-bold text-center text-[#272343] mb-6">
-              Contact Us
-            </h2>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Left - Form */}
-              <form className="space-y-3">
-                <input
-                  type="text"
-                  placeholder="Fullname"
-                  className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-[#272343]"
-                />
-                <input
-                  type="email"
-                  placeholder="Email"
-                  className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-[#272343]"
-                />
-                <textarea
-                  placeholder="Message"
-                  rows="4"
-                  className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-[#272343]"
-                ></textarea>
-                <button
-                  type="submit"
-                  className="w-full bg-[#272343] text-white py-2 rounded-md hover:bg-[#1a1a2e] transition-colors font-semibold"
-                >
-                  Contact Us
-                </button>
-              </form>
-
-              {/* Right - Info */}
-              <div className="space-y-4 text-[#272343]">
-                <div>
-                  <strong className="text-lg">Contact</strong>
-                  <br />
-                  <span>TaraTrabaho@gmail.com</span>
-                </div>
-                <div>
-                  <strong className="text-lg">Based in</strong>
-                  <br />
-                  <em>Magsaysay Avenue, Makati</em>
-                </div>
-                <div>
-                  <strong className="text-lg">Socials</strong>
-                  <div className="flex gap-4 mt-2 text-2xl">
-                    <a
-                      href="#"
-                      className="text-blue-600 hover:text-blue-800 transition-colors"
-                    >
-                      <FaFacebook />
-                    </a>
-                    <a
-                      href="#"
-                      className="text-pink-600 hover:text-pink-800 transition-colors"
-                    >
-                      <FaInstagram />
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* FAQ CONTENT */}
       <div className="flex-1 flex flex-col items-center justify-center mt-20 px-4">
@@ -220,6 +224,9 @@ const Faqs = () => {
           ))}
         </div>
       </div>
+
+      {/* CONTACT MODAL (reused from AboutUs) */}
+      <ContactModal isOpen={contactOpen} onClose={() => setContactOpen(false)} />
     </div>
   );
 };
