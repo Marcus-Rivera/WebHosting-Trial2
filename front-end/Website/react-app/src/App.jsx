@@ -9,14 +9,10 @@ import OtpPage from "./OtpPage";
 import AboutUsPage from "./AboutUsPage";
 import ManageUser from "./ManageUser";
 import JobListing from "./JobListing";
-<<<<<<< HEAD
-import Profile from "./ProfileSection";
 import Faqs from "./Faqs";
-=======
 import Faqs from "./Faqs";
 import Forget from "./ForgetPage";
 import Reset from "./ResetPassword";
->>>>>>> bb8312d121d13dd58954f58b07a8c4c09e8bd999
 
 function App() {
   return (
