@@ -19,44 +19,132 @@ const JobListing = () => {
     description: "",
     availability: 0
   });
+  const [errors, setErrors] = useState({});
+  const [successMessage, setSuccessMessage] = useState("");
 
-  const openAddModal = () => setShowAddModal(true);
+  const openAddModal = () => {
+    setShowAddModal(true);
+    setErrors({});
+    setSuccessMessage("");
+  };
+
   const closeAddModal = () => {
     setShowAddModal(false);
     setNewJob({ title: "", location: "", description: "", availability: 0 });
+    setErrors({});
+    setSuccessMessage("");
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setNewJob((prev) => ({ ...prev, [name]: value }));
+    
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: "" }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!newJob.title.trim()) {
+      newErrors.title = "Job title is required";
+    } else if (newJob.title.trim().length < 3) {
+      newErrors.title = "Job title must be at least 3 characters";
+    }
+
+    if (!newJob.location.trim()) {
+      newErrors.location = "Location is required";
+    }
+
+    if (!newJob.description.trim()) {
+      newErrors.description = "Description is required";
+    } else if (newJob.description.trim().length < 10) {
+      newErrors.description = "Description must be at least 10 characters";
+    }
+
+    if (newJob.availability < 0) {
+      newErrors.availability = "Availability cannot be negative";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const saveNewJob = () => {
-    if (newJob.title && newJob.location && newJob.description) {
-      setJobs([
-        ...jobs,
-        { id: jobs.length + 1, ...newJob, action: "Edit" }
-      ]);
-      closeAddModal();
-    } else {
-      alert("Please fill in all fields");
+    if (!validateForm()) {
+      return;
+    }
+
+    try {
+      const jobToAdd = {
+        id: Date.now(), // Use timestamp for better unique IDs
+        ...newJob,
+        action: "Edit"
+      };
+      
+      setJobs(prevJobs => [...prevJobs, jobToAdd]);
+      setSuccessMessage("Job added successfully!");
+      
+      // Auto-close modal after success
+      setTimeout(() => {
+        closeAddModal();
+      }, 1500);
+      
+    } catch (error) {
+      setErrors({ general: "Failed to add job. Please try again." });
     }
   };
 
   const handleActionChange = (jobId, newAction) => {
-    setJobs(jobs.map(job => 
-      job.id === jobId ? { ...job, action: newAction } : job
-    ));
+    try {
+      setJobs(jobs.map(job => 
+        job.id === jobId ? { ...job, action: newAction } : job
+      ));
+    } catch (error) {
+      console.error("Error updating job action:", error);
+    }
   };
 
   const deleteJob = (jobId) => {
-    setJobs(jobs.filter(job => job.id !== jobId));
+    if (window.confirm("Are you sure you want to delete this job listing?")) {
+      try {
+        setJobs(jobs.filter(job => job.id !== jobId));
+        setSuccessMessage("Job deleted successfully!");
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => setSuccessMessage(""), 3000);
+      } catch (error) {
+        setErrors({ general: "Failed to delete job. Please try again." });
+      }
+    }
+  };
+
+  const handleOverlayClick = (e) => {
+    if (e.target === e.currentTarget) {
+      closeAddModal();
+    }
   };
 
   return (
     <div className="max-w-6xl mx-auto">
       <h1 className="text-2xl font-bold text-gray-800 mb-6">Job Listing Management</h1>
-      <p className="text-gray-600 mb-8">Admin can add, edit, or remove job listings in the system.</p>
+      
+
+      {/* Success Message */}
+      {successMessage && (
+        <div className="mb-4 p-3 bg-green-100 text-green-800 rounded-md">
+          {successMessage}
+        </div>
+      )}
+
+      {/* General Error Message */}
+      {errors.general && (
+        <div className="mb-4 p-3 bg-red-100 text-red-800 rounded-md">
+          {errors.general}
+        </div>
+      )}
 
       {/* Add Job Button */}
       <div className="mb-6 flex justify-end">
@@ -121,63 +209,105 @@ const JobListing = () => {
         </table>
       </div>
 
-      {/* Add Job Modal */}
+      {/* Add Job Modal - No Dark Background */}
       {showAddModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50" onClick={closeAddModal}>
+        <div 
+          className="fixed inset-0 flex items-center justify-center z-50"
+          onClick={handleOverlayClick}
+        >
           <div 
-            className="bg-yellow-50 rounded-lg p-6 w-full max-w-md shadow-xl"
+            className="bg-yellow-50 rounded-lg p-6 w-full max-w-md shadow-xl border-2 border-yellow-200"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Add Job</h2>
+            <h2 className="text-xl font-bold text-gray-800 mb-4">Add New Job</h2>
             
             <div className="space-y-4">
-              <input
-                type="text"
-                name="title"
-                value={newJob.title}
-                onChange={handleInputChange}
-                placeholder="Job Title"
-                className="w-full px-3 py-2 border border-yellow-400 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
-              />
-              <input
-                type="text"
-                name="location"
-                value={newJob.location}
-                onChange={handleInputChange}
-                placeholder="Location"
-                className="w-full px-3 py-2 border border-yellow-400 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
-              />
-              <textarea
-                name="description"
-                value={newJob.description}
-                onChange={handleInputChange}
-                placeholder="Description"
-                rows="4"
-                className="w-full px-3 py-2 border border-yellow-400 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
-              />
-              <input
-                type="number"
-                name="availability"
-                value={newJob.availability}
-                onChange={handleInputChange}
-                placeholder="Availability"
-                min="0"
-                className="w-full px-3 py-2 border border-yellow-400 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
-              />
+              <div>
+                <input
+                  type="text"
+                  name="title"
+                  value={newJob.title}
+                  onChange={handleInputChange}
+                  placeholder="Job Title"
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                    errors.title 
+                      ? "border-red-500 focus:ring-red-500" 
+                      : "border-yellow-400 focus:ring-yellow-500"
+                  }`}
+                />
+                {errors.title && (
+                  <p className="text-red-500 text-sm mt-1">{errors.title}</p>
+                )}
+              </div>
+
+              <div>
+                <input
+                  type="text"
+                  name="location"
+                  value={newJob.location}
+                  onChange={handleInputChange}
+                  placeholder="Location"
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                    errors.location 
+                      ? "border-red-500 focus:ring-red-500" 
+                      : "border-yellow-400 focus:ring-yellow-500"
+                  }`}
+                />
+                {errors.location && (
+                  <p className="text-red-500 text-sm mt-1">{errors.location}</p>
+                )}
+              </div>
+
+              <div>
+                <textarea
+                  name="description"
+                  value={newJob.description}
+                  onChange={handleInputChange}
+                  placeholder="Description"
+                  rows="4"
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                    errors.description 
+                      ? "border-red-500 focus:ring-red-500" 
+                      : "border-yellow-400 focus:ring-yellow-500"
+                  }`}
+                />
+                {errors.description && (
+                  <p className="text-red-500 text-sm mt-1">{errors.description}</p>
+                )}
+              </div>
+
+              <div>
+                <input
+                  type="number"
+                  name="availability"
+                  value={newJob.availability}
+                  onChange={handleInputChange}
+                  placeholder="Availability"
+                  min="0"
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                    errors.availability 
+                      ? "border-red-500 focus:ring-red-500" 
+                      : "border-yellow-400 focus:ring-yellow-500"
+                  }`}
+                />
+                {errors.availability && (
+                  <p className="text-red-500 text-sm mt-1">{errors.availability}</p>
+                )}
+              </div>
             </div>
 
             <div className="flex justify-end space-x-3 mt-6">
               <button
                 onClick={closeAddModal}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={saveNewJob}
-                className="px-4 py-2 text-sm font-medium text-white bg-yellow-500 rounded-md hover:bg-yellow-600"
+                className="px-4 py-2 text-sm font-medium text-white bg-yellow-500 rounded-md hover:bg-yellow-600 transition-colors"
               >
-                Save
+                Save Job
               </button>
             </div>
           </div>
