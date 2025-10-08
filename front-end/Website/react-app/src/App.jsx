@@ -31,7 +31,6 @@ function App() {
         <Route path="/Faqs" element={<Faqs />} />
         <Route path="/Forget" element={<Forget />} />
         <Route path="/Reset" element={<Reset />} />
-        <Route path="/Report" element={<Report />} />
 
         <Route path="*" element={<h1>404 Not Found</h1>} />
       </Routes>

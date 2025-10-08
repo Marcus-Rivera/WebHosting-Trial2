@@ -4,8 +4,7 @@ const ManageUser = () => {
   // Sample user data with status and actions
   const [users, setUsers] = useState([
     { id: 1, username: "Rebbeca", email: "Rebeca@gmail.com", status: "Approved", action: "Approved" },
-    { id: 2, username: "John Doe", email: "Joe@gmail.com", status: "Suspended", action: "Suspended" },
-    { id: 3, username: "Bobby Joohn", email: "bob@gmail.com", status: "Pending", action: "Update" },
+    
   ]);
 
   // Handle action change and update status accordingly
