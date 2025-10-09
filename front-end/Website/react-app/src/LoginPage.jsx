@@ -50,13 +50,19 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (response.ok && data.success) {
+        setAlertMessage(""); // Clear previous messages
 
-        
-        setAlertMessage(""); // clear message
-        navigate("/taratrabaho");
+        const role = data.user.role;
+
+        if (role === "admin") {
+          navigate("/HomeAdmin");
+        } else {
+          navigate("/taratrabaho");
+        }
       } else {
         setAlertMessage("Invalid email or password");
       }
+
     } catch (error) {
       console.error("Login error:", error);
       setAlertMessage("Server error. Try again later.");

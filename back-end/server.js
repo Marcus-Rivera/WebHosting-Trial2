@@ -54,9 +54,7 @@ app.post("/api/login", async (req, res) => {
       message: "Login successful",
       user: {
         id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,  // Send role here
+        role: user.role
       },
     });
   });
