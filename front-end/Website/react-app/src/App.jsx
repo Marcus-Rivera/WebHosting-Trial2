@@ -9,6 +9,7 @@ import OtpPage from "./OtpPage";
 import AboutUsPage from "./AboutUsPage";
 import ManageUser from "./ManageUser";
 import JobListing from "./JobListing";
+import Profile from "./ProfileSection";
 import Faqs from "./Faqs";
 import Forget from "./ForgetPage";
 import Reset from "./ResetPassword";

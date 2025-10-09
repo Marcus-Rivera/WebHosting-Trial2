@@ -8,7 +8,7 @@ import LogoutIcon from "@mui/icons-material/Logout";
 
 import ManageUser from "./ManageUser"; 
 import JobListing from "./JobListing"; 
-// later you’ll also import Report.jsx when ready
+import Report from "./Report"; 
 
 const SidebarContent = ({ active, setActive }) => (
   <div className="flex flex-col w-64 h-full px-4 py-8 overflow-y-auto bg-white dark:bg-[#BAE8E8] dark:border-gray-700">
@@ -52,15 +52,15 @@ const SidebarContent = ({ active, setActive }) => (
         </a>
 
         <a
-          onClick={() => setActive("Reports")}
+          onClick={() => setActive("Report")}
           className={`flex items-center px-4 py-2 mt-5 rounded-lg cursor-pointer ${
-            active === "Reports"
-              ? "bg-[#FCDA53] text-[#272343] font-bold"
+            active === "Report"
+              ? "bg-[#FBDA23] text-[#272343] font-bold" // Fixed typo from FCDA53 to FBDA23
               : "text-[#272343] hover:bg-[#FBDA23]/38 hover:text-gray-700"
           }`}
         >
           <AssignmentIcon className="w-5 h-5" />
-          <span className="mx-4 font-bold">Reports</span>
+          <span className="mx-4 font-bold">Report</span>
         </a>
       </nav>
 
@@ -113,7 +113,7 @@ const HomeAdmin = () => {
       <main className="flex-1 p-8 bg-white overflow-y-auto">
         {active === "Manage User" && <ManageUser />}
         {active === "Job Listing" && <JobListing />}
-        {active === "Reports" && <div>Report.jsx (placeholder)</div>}
+        {active === "Report" && <Report />} {/* Fixed to match state name */}
       </main>
     </div>
   );

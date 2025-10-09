@@ -4,8 +4,7 @@ const ManageUser = () => {
   // Sample user data with status and actions
   const [users, setUsers] = useState([
     { id: 1, username: "Rebbeca", email: "Rebeca@gmail.com", status: "Approved", action: "Approved" },
-    { id: 2, username: "John Doe", email: "Joe@gmail.com", status: "Suspend", action: "Suspend" },
-    { id: 3, username: "Bobby Joohn", email: "bob@gmail.com", status: "Pending", action: "Update" },
+    
   ]);
 
   // Handle action change and update status accordingly
@@ -20,7 +19,7 @@ const ManageUser = () => {
   return (
     <div className="max-w-6xl mx-auto">
       <h1 className="text-2xl font-bold text-gray-800 mb-6">Manage Users</h1>
-      <p className="text-gray-600 mb-8">Allows Admin to approve, suspend or update user accounts</p>
+      
 
       {/* User Table */}
       <div className="bg-white shadow-md rounded-lg overflow-hidden border border-gray-200">
@@ -54,7 +53,7 @@ const ManageUser = () => {
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                     user.status === "Approved" 
                       ? "bg-green-100 text-green-800" 
-                      : user.status === "Suspend" 
+                      : user.status === "Suspended" 
                       ? "bg-red-100 text-red-800"
                       : "bg-yellow-100 text-yellow-800"
                   }`}>
@@ -68,7 +67,7 @@ const ManageUser = () => {
                     className="block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="Approved">Approved</option>
-                    <option value="Suspend">Suspend</option>
+                    <option value="Suspended">Suspended</option>
                     <option value="Update">Update</option>
                   </select>
                 </td>
