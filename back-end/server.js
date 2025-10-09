@@ -48,8 +48,17 @@ app.post("/api/login", async (req, res) => {
       return res.status(401).json({ status: "error", message: "Invalid email or password" });
     }
 
-    // Successful authentication
-    return res.json({ success: true, message: "Login successful" });
+     // Successful authentication → send user info (but omit sensitive data)
+    return res.json({
+      success: true,
+      message: "Login successful",
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,  // Send role here
+      },
+    });
   });
 });
 

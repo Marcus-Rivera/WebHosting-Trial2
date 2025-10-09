@@ -50,6 +50,8 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (response.ok && data.success) {
+
+        
         setAlertMessage(""); // clear message
         navigate("/taratrabaho");
       } else {
