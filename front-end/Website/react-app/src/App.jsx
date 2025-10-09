@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./LoginPage";
 import Home from "./Home";
 import HomeAdmin from "./HomeAdmin";
@@ -10,9 +10,15 @@ import AboutUsPage from "./AboutUsPage";
 import ManageUser from "./ManageUser";
 import JobListing from "./JobListing";
 import Faqs from "./Faqs";
-import Faqs from "./Faqs";
 import Forget from "./ForgetPage";
 import Reset from "./ResetPassword";
+
+// Import your sections
+import ProfileSection from "./ProfileSection";
+import DashboardSection from "./DashboardSection";
+import CareerBotSection from "./CareerBotSection";
+import ResumeSection from "./ResumeSection";
+import JobListingsSection from "./JobListingsSection";
 
 function App() {
   return (
@@ -21,15 +27,26 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
-        <Route path="/taratrabaho" element={<Home />} />
-        <Route path="/HomeAdmin" element={<HomeAdmin />} />
         <Route path="/otp" element={<OtpPage />} />
         <Route path="/about" element={<AboutUsPage />} />
-        <Route path="/ManageUser" element={<ManageUser />} />
-        <Route path="/JobListing" element={<JobListing />} />
         <Route path="/Faqs" element={<Faqs />} />
         <Route path="/Forget" element={<Forget />} />
         <Route path="/Reset" element={<Reset />} />
+
+        {/* Nested routes for Home */}
+        <Route path="/taratrabaho" element={<Home />}>
+          <Route index element={<Navigate to="profile" replace />} />
+          <Route path="profile" element={<ProfileSection />} />
+          <Route path="dashboard" element={<DashboardSection />} />
+          <Route path="careerbot" element={<CareerBotSection />} />
+          <Route path="resumes" element={<ResumeSection />} />
+          <Route path="jobs" element={<JobListingsSection />} />
+        </Route>
+
+        {/* Admin routes */}
+        <Route path="/HomeAdmin" element={<HomeAdmin />} />
+        <Route path="/ManageUser" element={<ManageUser />} />
+        <Route path="/JobListing" element={<JobListing />} />
 
         <Route path="*" element={<h1>404 Not Found</h1>} />
       </Routes>

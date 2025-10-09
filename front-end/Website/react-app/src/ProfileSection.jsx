@@ -130,10 +130,10 @@ const ProfileSection = () => {
 
           {/* Buttons */}
           <div className="flex gap-4 mt-6">
-            <button className="px-6 py-2 bg-[#272343] text-white rounded-xl">
+            <button className="px-6 py-2 bg-[#272343] text-white rounded-xl cursor-pointer">
               Save
             </button>
-            <button className="px-6 py-2 bg-[#272343] text-white rounded-xl">
+            <button className="px-6 py-2 bg-[#272343] text-white rounded-xl cursor-pointer">
               Edit
             </button>
           </div>
