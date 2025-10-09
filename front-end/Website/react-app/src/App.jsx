@@ -9,17 +9,17 @@ import OtpPage from "./OtpPage";
 import AboutUsPage from "./AboutUsPage";
 import ManageUser from "./ManageUser";
 import JobListing from "./JobListing";
-import Profile from "./ProfileSection";
 import Faqs from "./Faqs";
 import Forget from "./ForgetPage";
 import Reset from "./ResetPassword";
+import Report from "./Report";
 
 // Import your sections
 import ProfileSection from "./ProfileSection";
 import DashboardSection from "./DashboardSection";
 import CareerBotSection from "./CareerBotSection";
 import ResumeSection from "./ResumeSection";
-import JobListingsSection from "./JobListingsSection";
+import JobListingsSection from "./JobListingsSection"; // NEW IMPORT
 
 function App() {
   return (
@@ -42,7 +42,7 @@ function App() {
           <Route path="dashboard" element={<DashboardSection />} />
           <Route path="careerbot" element={<CareerBotSection />} />
           <Route path="resumes" element={<ResumeSection />} />
-          <Route path="jobs" element={<JobListingsSection />} />
+          <Route path="jobs" element={<JobListingsSection />} /> {/* NEW ROUTE */}
         </Route>
 
         {/* Admin routes */}
