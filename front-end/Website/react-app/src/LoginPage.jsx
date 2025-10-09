@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import bg from './assets/BG.png';
 import { FaFacebookF } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
@@ -10,35 +10,77 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({});
   const [alertMessage, setAlertMessage] = useState("");
+  const [alertSeverity, setAlertSeverity] = useState("error"); // For MUI Alert
   const navigate = useNavigate();
 
-  const validateForm = () => {
-    let newErrors = {};
+  // Auto-hide alert after 5 seconds
+  useEffect(() => {
+    if (alertMessage) {
+      const timer = setTimeout(() => {
+        setAlertMessage("");
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [alertMessage]);
+
+  const validateField = (fieldName, value) => {
+    let fieldErrors = { ...errors };
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!email) {
-      newErrors.email = "Email is required";
-    } else if (!emailRegex.test(email)) {
-      newErrors.email = "Enter a valid email address";
+    if (fieldName === "email") {
+      if (!value) {
+        fieldErrors.email = "Email is required";
+      } else if (!emailRegex.test(value)) {
+        fieldErrors.email = "Enter a valid email address";
+      } else {
+        delete fieldErrors.email; // Clear error if valid
+      }
     }
 
-    if (!password) {
-      newErrors.password = "Password is required";
-    } else if (password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
+    if (fieldName === "password") {
+      if (!value) {
+        fieldErrors.password = "Password is required";
+      } else if (value.length < 6) {
+        fieldErrors.password = "Password must be at least 6 characters";
+      } else {
+        delete fieldErrors.password; // Clear error if valid
+      }
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setErrors(fieldErrors);
+  };
+
+  const validateForm = () => {
+    validateField("email", email);
+    validateField("password", password);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    if (name === "email") setEmail(value);
+    if (name === "password") setPassword(value);
+    // Validate on change for real-time feedback
+    validateField(name, value);
+  };
+
+  const handleBlur = (e) => {
+    const { name } = e.target;
+    validateField(name, e.target.value);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Run full validation
     if (!validateForm()) {
-      setAlertMessage("Please enter valid email and password"); // instead of setShowAlert
+      setAlertMessage("Please fix the errors below");
+      setAlertSeverity("error");
       return;
     }
+
+    // Clear any previous alerts
+    setAlertMessage("");
 
     try {
       const response = await fetch("http://localhost:5000/api/login", {
@@ -50,27 +92,31 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        setAlertMessage(""); // Clear previous messages
-
+        // Success: Clear form and navigate
+        setEmail("");
+        setPassword("");
+        setErrors({});
         const role = data.user.role;
-
         if (role === "admin") {
           navigate("/HomeAdmin");
         } else {
           navigate("/taratrabaho");
         }
       } else {
-        setAlertMessage("Invalid email or password");
+        // Server error: Use specific message if available (e.g., for invalid password)
+        const errorMsg = data.message || "Invalid email or password";
+        setAlertMessage(errorMsg);
+        setAlertSeverity("error");
+        // Highlight fields on server error (optional: assume email/password invalid)
+        setErrors({ email: "Invalid credentials", password: "Invalid credentials" });
       }
 
     } catch (error) {
       console.error("Login error:", error);
       setAlertMessage("Server error. Try again later.");
+      setAlertSeverity("error");
     }
-
   };
-
-
 
   return (
     <div
@@ -80,7 +126,9 @@ export default function LoginPage() {
       {/* Alert if login fails */}
       {alertMessage && (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-lg">
-          <Alert severity="error">{alertMessage}</Alert>
+          <Alert severity={alertSeverity} onClose={() => setAlertMessage("")}>
+            {alertMessage}
+          </Alert>
         </div>
       )}
 
@@ -91,36 +139,60 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email */}
             <div>
-              <label className="block text-md font-bold font-inter text-gray-600">Email</label>
+              <label 
+                htmlFor="email"
+                className="block text-md font-bold font-inter text-gray-600"
+              >
+                Email{errors.email ? <span className="text-red-500 ml-1">*</span> : ''}
+              </label>
               <input
+                id="email"
+                name="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={`mt-1 w-full rounded-lg border-[#272343] border p-2 focus:outline-none focus:ring-2 bg-[#BAE8E8] ${
+                onChange={handleInputChange}
+                onBlur={handleBlur}
+                className={`mt-1 w-full rounded-lg border p-2 focus:outline-none focus:ring-2 bg-[#BAE8E8] ${
                   errors.email
-                    ? "border-red-500 focus:ring-red-200"
-                    : " focus:border-blue-500 focus:ring-blue-200"
+                    ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+                    : "border-[#272343] focus:border-blue-500 focus:ring-blue-500"
                 }`}
                 placeholder="Enter your email"
+                aria-invalid={!!errors.email}
+                aria-describedby={errors.email ? "email-error" : undefined}
               />
-              {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email}</p>}
+              {errors.email && (
+                <p id="email-error" className="mt-1 text-sm text-red-500">{errors.email}</p>
+              )}
             </div>
 
             {/* Password */}
             <div>
-              <label className="block text-md font-bold text-gray-600">Password</label>
+              <label 
+                htmlFor="password"
+                className="block text-md font-bold text-gray-600"
+              >
+                Password{errors.password ? <span className="text-red-500 ml-1">*</span> : ''}
+              </label>
               <input
+                id="password"
+                name="password"
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={`mt-1 w-full rounded-lg border-[#272343] border p-2 focus:outline-none focus:ring-2 bg-[#BAE8E8] ${
+                onChange={handleInputChange}
+                onBlur={handleBlur}
+                className={`mt-1 w-full rounded-lg border p-2 focus:outline-none focus:ring-2 bg-[#BAE8E8] ${
                   errors.password
-                    ? "border-red-500 focus:ring-red-200"
-                    : " focus:border-blue-500 focus:ring-blue-200"
+                    ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+                    : "border-[#272343] focus:border-blue-500 focus:ring-blue-500"
                 }`}
                 placeholder="Enter your password"
+                aria-invalid={!!errors.password}
+                aria-describedby={errors.password ? "password-error" : undefined}
               />
-              {errors.password && <p className="mt-1 text-sm text-red-500">{errors.password}</p>}
+              {errors.password && (
+                <p id="password-error" className="mt-1 text-sm text-red-500">{errors.password}</p>
+              )}
             </div>
 
             {/* Submit */}
@@ -133,7 +205,7 @@ export default function LoginPage() {
           </form>
 
           {/* Extra Links */}
-          <p className="mt-6  mb-1 text-center text-sm">
+          <p className="mt-6 mb-1 text-center text-sm">
             <a href="/Signup" className="text-[#272343] font-bold underline hover:underline">
               Don’t have an account? Sign up
             </a>
@@ -150,14 +222,12 @@ export default function LoginPage() {
       <div className="flex w-full lg:w-1/2 justify-center lg:justify-end p-8 lg:items-center">
         <div className="text-center lg:text-right text-[#272343] p-2">
           <h3 className="text-3xl">Welcome Back to</h3>
-          {/* <h1 className="text-5xl xl:text-7xl font-inter font-bold mb-4">TaraTRABAHO</h1> */}
-
           <h1 className="text-5xl lg:text-7xl font-inter font-bold mt-5 mb-4 italic text-[#272343] animate-bounce">
-              Tara
-              <span className="text-yellow-400 drop-shadow-[2px_2px_0px_black] italic">
-                Trabaho!
-              </span>
-            </h1>
+            Tara
+            <span className="text-yellow-400 drop-shadow-[2px_2px_0px_black] italic">
+              Trabaho!
+            </span>
+          </h1>
           <p className="text-lg mb-4">Sign in to access your dashboard and start your journey with us.</p>
           <h4 className="font-bold">Login With</h4>
 
