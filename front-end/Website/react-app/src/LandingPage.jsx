@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import bg from './assets/BG.png';
-import { FaBars, FaTimes, FaFacebookF, FaInstagram } from "react-icons/fa";
+import { FaBars, FaTimes, FaFacebookF, FaInstagram, FaSignInAlt } from "react-icons/fa";
+import PersonAddAltIcon from '@mui/icons-material/PersonAddAlt';
 
 const ContactModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
@@ -144,8 +145,23 @@ const LandingPage = () => {
             and track your progress. Your data stays safe with encrypted storage, password hashing, and OTP login.
             </p>
             <div className="flex justify-center gap-4 mt-4">
-            <a href="/login" className="px-12 py-2 rounded-md bg-[#272343] text-white hover:bg-yellow-400 hover:text-black transition">Login</a>
-            <a href="/signup" className="flex items-center gap-2 px-10 py-2 rounded-md bg-[#272343] text-white hover:text-black hover:bg-red-200 hover:scale-105 hover:shadow-lg transition">Sign Up</a>
+            <a 
+                href="/login" 
+                className="flex items-center gap-2 px-8 py-2 rounded-md bg-[#272343] text-white hover:bg-yellow-400 hover:text-black transition"
+                aria-label="Login to your account"
+            >
+                <FaSignInAlt size={18} />
+                Login
+            </a>
+            {/* Updated Signup Button with Icon */}
+            <a 
+                href="/signup" 
+                className="flex items-center gap-2 px-8 py-2 rounded-md bg-[#272343] text-white hover:bg-yellow-400 hover:text-black transition"
+                aria-label="Sign up for a new account"
+            >
+                <PersonAddAltIcon size={18} />
+                Sign Up
+            </a>
             </div>
         </div>
 
