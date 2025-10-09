@@ -33,6 +33,7 @@ function App() {
         <Route path="/Faqs" element={<Faqs />} />
         <Route path="/Forget" element={<Forget />} />
         <Route path="/Reset" element={<Reset />} />
+        <Route path="/Report" element={<Report />} />
 
         {/* Nested routes for Home */}
         <Route path="/taratrabaho" element={<Home />}>
