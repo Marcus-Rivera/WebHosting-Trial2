@@ -68,7 +68,7 @@ const ManageUser = () => {
                   >
                     <option value="Approved">Approved</option>
                     <option value="Suspended">Suspended</option>
-                    <option value="Update">Update</option>
+                    <option value="Pending">Update</option>
                   </select>
                 </td>
               </tr>
