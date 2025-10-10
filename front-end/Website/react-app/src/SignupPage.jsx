@@ -181,7 +181,7 @@ const SignupPage = () => {
           setAlertType("success");
           setAlertMsg("User registered successfully!");
           setShowAlert(true);
-          setTimeout(() => navigate("/taratrabaho"), 2000);
+          setTimeout(() => navigate("/login"), 2000);
         } else {
           setAlertType("error");
           setAlertMsg(result.message || "Registration failed");
@@ -207,7 +207,7 @@ const SignupPage = () => {
 
   return (
     <div
-      className="flex flex-col lg:flex-row bg-cover min-h-screen lg:items-center pt-5 pb-5 lg:pt-5 lg:pb-10"
+      className="flex flex-col lg:flex-row bg-cover min-h-screen lg:items-center pt-5 pb-5 lg:pb-5"
       style={{ backgroundImage: `url(${bg})` }}
     >
       {/* Alert */}
@@ -233,8 +233,8 @@ const SignupPage = () => {
       </div>
 
       {/* Signup Form */}
-      <div className="flex w-full lg:w-2/3 items-center justify-center p-7">
-        <div className="w-full max-w-2xl rounded-3xl bg-[#FFE660] p-10 shadow-lg">
+      <div className="flex w-full lg:w-2/3 items-center justify-center p-5">
+        <div className="w-full max-w-2xl rounded-3xl bg-[#FFE660] p-8 shadow-lg">
           <h2 className="mb-6 text-center text-3xl font-bold text-gray-800">
             Create Account
           </h2>
@@ -244,7 +244,7 @@ const SignupPage = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Firstname {touched.firstname && errors.firstname && <span className="text-red-500">*</span>}
+                  Firstname {touched.firstname && errors.firstname && <span className="text-red-500 text-xs">* {errors.firstname}</span>}
                 </label>
                 <input
                   type="text"
@@ -255,13 +255,10 @@ const SignupPage = () => {
                   placeholder="Firstname"
                   className={getInputClassName("firstname", "w-full rounded-md p-2 bg-[#BAE8E8] focus:outline-none focus:ring-2 focus:ring-[#272343]")}
                 />
-                {touched.firstname && errors.firstname && (
-                  <p className="text-red-500 text-xs mt-1">{errors.firstname}</p>
-                )}
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Lastname {touched.lastname && errors.lastname && <span className="text-red-500">*</span>}
+                  Lastname {touched.lastname && errors.lastname && <span className="text-red-500 text-xs">* {errors.lastname}</span>}
                 </label>
                 <input
                   type="text"
@@ -272,9 +269,6 @@ const SignupPage = () => {
                   placeholder="Lastname"
                   className={getInputClassName("lastname", "w-full rounded-md p-2 bg-[#BAE8E8] focus:outline-none focus:ring-2 focus:ring-[#272343]")}
                 />
-                {touched.lastname && errors.lastname && (
-                  <p className="text-red-500 text-xs mt-1">{errors.lastname}</p>
-                )}
               </div>
             </div>
 
@@ -309,7 +303,7 @@ const SignupPage = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Username {touched.username && errors.username && <span className="text-red-500">*</span>}
+                  Username {touched.username && errors.username && <span className="text-red-500 text-xs">* {errors.username}</span>}
                 </label>
                 <input
                   type="text"
@@ -320,13 +314,10 @@ const SignupPage = () => {
                   placeholder="Username"
                   className={getInputClassName("username", "w-full rounded-md p-2 bg-[#BAE8E8] focus:outline-none focus:ring-2 focus:ring-[#272343]")}
                 />
-                {touched.username && errors.username && (
-                  <p className="text-red-500 text-xs mt-1">{errors.username}</p>
-                )}
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Email {touched.email && errors.email && <span className="text-red-500">*</span>}
+                  Email {touched.email && errors.email && <span className="text-red-500 text-xs">* {errors.email}</span>}
                 </label>
                 <input
                   type="email"
@@ -337,9 +328,6 @@ const SignupPage = () => {
                   placeholder="Email"
                   className={getInputClassName("email", "w-full rounded-md p-2 bg-[#BAE8E8] focus:outline-none focus:ring-2 focus:ring-[#272343]")}
                 />
-                {touched.email && errors.email && (
-                  <p className="text-red-500 text-xs mt-1">{errors.email}</p>
-                )}
               </div>
             </div>
 
@@ -359,7 +347,7 @@ const SignupPage = () => {
             {/* Password */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Password {touched.password && errors.password && <span className="text-red-500">*</span>}
+                Password {touched.password && errors.password && <span className="text-red-500 text-xs">* {errors.password}</span>}
               </label>
               <div className="relative">
                 <input
@@ -389,15 +377,12 @@ const SignupPage = () => {
                   )}
                 </button>
               </div>
-              {touched.password && errors.password && (
-                <p className="text-red-500 text-xs mt-1">{errors.password}</p>
-              )}
             </div>
 
             {/* Confirm Password */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Confirm Password {touched.confirmPassword && errors.confirmPassword && <span className="text-red-500">*</span>}
+                Confirm Password {touched.confirmPassword && errors.confirmPassword && <span className="text-red-500 text-xs">* {errors.confirmPassword}</span>}
               </label>
               <div className="relative">
                 <input
@@ -427,9 +412,6 @@ const SignupPage = () => {
                   )}
                 </button>
               </div>
-              {touched.confirmPassword && errors.confirmPassword && (
-                <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>
-              )}
             </div>
 
             {/* Terms */}
@@ -453,12 +435,9 @@ const SignupPage = () => {
                   >
                     Terms of Use
                   </button>
-                  {touched.agree && errors.agree && <span className="text-red-500"> *</span>}
+                  {touched.agree && errors.agree && <span className="text-red-500 text-xs"> * {errors.agree}</span>}
                 </p>
               </div>
-              {touched.agree && errors.agree && (
-                <p className="text-red-500 text-xs mt-1">{errors.agree}</p>
-              )}
             </div>
 
             {/* Button */}
