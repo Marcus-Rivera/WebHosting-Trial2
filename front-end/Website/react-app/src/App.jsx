@@ -19,38 +19,45 @@ import ProfileSection from "./ProfileSection";
 import DashboardSection from "./DashboardSection";
 import CareerBotSection from "./CareerBotSection";
 import ResumeSection from "./ResumeSection";
-import JobListingsSection from "./JobListingsSection"; // NEW IMPORT
+import JobListingsSection from "./JobListingsSection";
 
 function App() {
   return (
     <Router>
       <Routes>
+        {/* Public routes */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/otp" element={<OtpPage />} />
         <Route path="/about" element={<AboutUsPage />} />
-        <Route path="/Faqs" element={<Faqs />} />
-        <Route path="/Forget" element={<Forget />} />
-        <Route path="/Reset" element={<Reset />} />
-        <Route path="/Report" element={<Report />} />
+        <Route path="/faqs" element={<Faqs />} />
+        <Route path="/forget" element={<Forget />} />
+        <Route path="/reset" element={<Reset />} />
+        <Route path="/report" element={<Report />} />
 
-        {/* Nested routes for Home */}
+        {/* User Dashboard (TaraTrabaho) */}
         <Route path="/taratrabaho" element={<Home />}>
+          {/* Default redirect */}
           <Route index element={<Navigate to="profile" replace />} />
           <Route path="profile" element={<ProfileSection />} />
           <Route path="dashboard" element={<DashboardSection />} />
           <Route path="careerbot" element={<CareerBotSection />} />
           <Route path="resumes" element={<ResumeSection />} />
-          <Route path="jobs" element={<JobListingsSection />} /> {/* NEW ROUTE */}
+          <Route path="jobs" element={<JobListingsSection />} />
         </Route>
 
-        {/* Admin routes */}
-        <Route path="/HomeAdmin" element={<HomeAdmin />} />
-        <Route path="/ManageUser" element={<ManageUser />} />
-        <Route path="/JobListing" element={<JobListing />} />
+        {/* Admin Dashboard */}
+        <Route path="/admin" element={<HomeAdmin />}>
+          {/* Default redirect to manage-users */}
+          <Route index element={<Navigate to="manage-users" replace />} />
+          <Route path="manage-users" element={<ManageUser />} />
+          <Route path="job-listing" element={<JobListing />} />
+          <Route path="report" element={<Report />} />
+        </Route>
 
-        <Route path="*" element={<h1>404 Not Found</h1>} />
+        {/* 404 Fallback */}
+        <Route path="*" element={<h1 className="text-center mt-10 text-2xl">404 Not Found</h1>} />
       </Routes>
     </Router>
   );
