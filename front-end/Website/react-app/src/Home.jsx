@@ -25,6 +25,7 @@ const SidebarContent = ({ onClose, isMobile }) => {
 
   const handleLogout = () => {
     // Add your logout logic here (clear tokens, etc.)
+    sessionStorage.removeItem("token");
     navigate('/login');
   };
 
