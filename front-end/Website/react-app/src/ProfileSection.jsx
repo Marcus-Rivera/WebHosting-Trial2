@@ -1,73 +1,24 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import PersonIcon from "@mui/icons-material/Person";
 import SkillsSection from "./SkillsSections";
-import { useNavigate } from "react-router-dom";
+import { useSessionCheck } from "../useSessionCheck";
+import SessionExpiredModal from "../SessionExpiredModal";
 
 const ProfileSection = () => {
-  const navigate = useNavigate();
-  const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [sessionError, setSessionError] = useState(false); // track session expiration
+  const { userData, loading, sessionError } = useSessionCheck();
 
-  useEffect(() => {
-    const token = sessionStorage.getItem("token");
-
-    if (!token) {
-      // If no token exists, show popup then redirect
-      setSessionError(true);
-      setTimeout(() => navigate("/login"), 5000);
-      return;
-    }
-
-    // Verify token validity with backend
-    fetch("http://localhost:5000/api/verifyToken", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (!data.valid) {
-          // Token invalid or expired
-          sessionStorage.removeItem("token");
-          setSessionError(true);
-          setTimeout(() => navigate("/login"), 5000);
-        } else {
-          setUserData(data.user);
-        }
-      })
-      .catch(() => {
-        setSessionError(true);
-        setTimeout(() => navigate("/login"), 5000);
-      })
-      .finally(() => setLoading(false));
-  }, [navigate]);
-
-  // Error popup for expired session
-  if (sessionError) {
+  if (loading) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-        <div className="bg-white rounded-xl shadow-lg p-8 text-center w-80">
-          <h2 className="text-lg font-bold text-[#6E090B] mb-3">
-            Session Expired
-          </h2>
-          <p className="text-sm text-[#272343] mb-4">
-            Your session has expired. Redirecting to login...
-          </p>
-          <button
-            onClick={() => navigate("/login")}
-            className="px-4 py-2 bg-[#272343] text-white rounded-md"
-          >
-            Go to Login
-          </button>
-        </div>
-      </div>
+      <main className="flex items-center justify-center h-screen text-[#272343]">
+        <h2>Loading profile...</h2>
+      </main>
     );
   }
 
+  if (sessionError) return <SessionExpiredModal />;
+
   if (!userData) return null;
+
 
   return (
     <main className="flex-1 lg:p-8 bg-white overflow-y-auto">
