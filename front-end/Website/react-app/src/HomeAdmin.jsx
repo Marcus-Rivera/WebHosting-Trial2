@@ -6,17 +6,17 @@ import CloseIcon from "@mui/icons-material/Close";
 import PersonIcon from "@mui/icons-material/Person";
 import WorkOutlineOutlinedIcon from "@mui/icons-material/WorkOutlineOutlined";
 import AssignmentIcon from "@mui/icons-material/Assignment";
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate} from "react-router-dom";
+import { useSessionCheck } from "../useSessionCheck";
+import SessionExpiredModal from "../SessionExpiredModal";
 
 const SidebarContent = ({ onClose, isMobile }) => {
-  const location = useLocation();
+  const { userData, sessionError } = useSessionCheck();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    alert("Admin logging out...");
-    navigate('/login');
-    // Add your logout logic here (e.g., clear token, redirect to login)
-  };
+  if (sessionError) return <SessionExpiredModal />;
+
+  if (!userData) return null;
 
   // Utility to check if the current path matches
   const isActive = (path) => location.pathname === path;
@@ -26,6 +26,12 @@ const SidebarContent = ({ onClose, isMobile }) => {
     { path: "/admin/job-listing", icon: <WorkOutlineOutlinedIcon />, label: "Job Listing", badge: "New" },
     { path: "/admin/report", icon: <AssignmentIcon />, label: "Report", badge: "Data" },
   ];
+
+  const handleLogout = () => {
+    alert("Admin logging out...");
+    sessionStorage.removeItem("token");
+    navigate('/login');
+  };
 
   return (
     <div className="flex flex-col w-64 h-full bg-gradient-to-b from-[#BAE8E8] via-[#C8E9E9] to-[#D0EBEB] shadow-xl">
