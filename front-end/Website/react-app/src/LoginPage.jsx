@@ -93,12 +93,13 @@ export default function LoginPage() {
 
       if (response.ok && data.success) {
         // Success: Clear form and navigate
+        sessionStorage.setItem("token", data.token);
         setEmail("");
         setPassword("");
         setErrors({});
         const role = data.user.role;
         if (role === "admin") {
-          navigate("/HomeAdmin");
+          navigate("/admin");
         } else {
           navigate("/taratrabaho");
         }

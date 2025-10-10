@@ -4,6 +4,8 @@ const sqlite3 = require("sqlite3").verbose();
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const SECRET_KEY = "your-secret-key"; // Use .env for real projects
 
 // Initialize Express application
 const app = express();
@@ -48,17 +50,35 @@ app.post("/api/login", async (req, res) => {
       return res.status(401).json({ status: "error", message: "Invalid email or password" });
     }
 
+
+    // Create JWT (expires in 1 hour) 
+    const token = jwt.sign({ id: user.id, email: user.email }, SECRET_KEY, 
+      {expiresIn: "1h",});
+
      // Successful authentication → send user info (but omit sensitive data)
     return res.json({
       success: true,
       message: "Login successful",
+      token,
       user: {
         id: user.id,
-        role: user.role
+        role: user.role,
       },
     });
   });
 });
+
+app.post("/api/verifyToken", (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  if (!token) return res.json({ valid: false });
+
+  jwt.verify(token, "your-secret-key", (err, decoded) => {
+    if (err) return res.json({ valid: false });
+    res.json({ valid: true, user: decoded });
+  });
+});
+
 
 // ============================================================================
 // SIGNUP ENDPOINT

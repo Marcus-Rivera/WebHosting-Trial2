@@ -1,8 +1,25 @@
 import React from "react";
 import PersonIcon from "@mui/icons-material/Person";
 import SkillsSection from "./SkillsSections";
+import { useSessionCheck } from "../useSessionCheck";
+import SessionExpiredModal from "../SessionExpiredModal";
 
 const ProfileSection = () => {
+  const { userData, loading, sessionError } = useSessionCheck();
+
+  if (loading) {
+    return (
+      <main className="flex items-center justify-center h-screen text-[#272343]">
+        <h2>Loading profile...</h2>
+      </main>
+    );
+  }
+
+  if (sessionError) return <SessionExpiredModal />;
+
+  if (!userData) return null;
+
+
   return (
     <main className="flex-1 lg:p-8 bg-white overflow-y-auto">
       <h1 className="text-2xl font-bold text-center text-[#272343] mb-6">
