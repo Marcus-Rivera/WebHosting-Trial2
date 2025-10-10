@@ -293,14 +293,14 @@ const ProfileSection = () => {
               <>
                 <button
                   onClick={handleSave}
-                  className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all hover:scale-105 font-semibold"
+                  className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all hover:scale-105 font-semibold cursor-pointer"
                 >
                   <SaveIcon />
                   Save Changes
                 </button>
                 <button
                   onClick={handleCancel}
-                  className="flex items-center gap-2 px-6 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all hover:scale-105 font-semibold"
+                  className="flex items-center gap-2 px-6 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all hover:scale-105 font-semibold cursor-pointer"
                 >
                   <CancelIcon />
                   Cancel
@@ -309,7 +309,7 @@ const ProfileSection = () => {
             ) : (
               <button
                 onClick={handleEdit}
-                className="flex items-center gap-2 px-6 py-2 bg-[#272343] text-white rounded-xl hover:bg-[#1b163e] transition-all hover:scale-105 font-semibold"
+                className="flex items-center gap-2 px-6 py-2 bg-[#272343] text-white rounded-xl hover:bg-[#1b163e] transition-all hover:scale-105 font-semibold cursor-pointer"
               >
                 <EditIcon />
                 Edit Profile
