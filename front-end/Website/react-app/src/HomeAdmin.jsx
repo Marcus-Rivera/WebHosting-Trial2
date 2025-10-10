@@ -6,13 +6,15 @@ import CloseIcon from "@mui/icons-material/Close";
 import PersonIcon from "@mui/icons-material/Person";
 import WorkOutlineOutlinedIcon from "@mui/icons-material/WorkOutlineOutlined";
 import AssignmentIcon from "@mui/icons-material/Assignment";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 const SidebarContent = ({ onClose, isMobile }) => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const handleLogout = () => {
     alert("Admin logging out...");
+    navigate('/login');
     // Add your logout logic here (e.g., clear token, redirect to login)
   };
 

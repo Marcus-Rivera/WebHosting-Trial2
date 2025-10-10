@@ -99,7 +99,7 @@ export default function LoginPage() {
         setErrors({});
         const role = data.user.role;
         if (role === "admin") {
-          navigate("/HomeAdmin");
+          navigate("/admin");
         } else {
           navigate("/taratrabaho");
         }
