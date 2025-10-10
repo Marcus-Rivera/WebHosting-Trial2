@@ -4,7 +4,7 @@ import SkillsSection from "./SkillsSections";
 import { useNavigate } from "react-router-dom";
 
 const ProfileSection = () => {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [sessionError, setSessionError] = useState(false); // track session expiration
@@ -15,7 +15,7 @@ const ProfileSection = () => {
     if (!token) {
       // If no token exists, show popup then redirect
       setSessionError(true);
-      // // setTimeout(() => navigate("/login"));
+      setTimeout(() => navigate("/login"), 5000);
       return;
     }
 
@@ -33,14 +33,14 @@ const ProfileSection = () => {
           // Token invalid or expired
           sessionStorage.removeItem("token");
           setSessionError(true);
-          // setTimeout(() => navigate("/login"));
+          setTimeout(() => navigate("/login"), 5000);
         } else {
           setUserData(data.user);
         }
       })
       .catch(() => {
         setSessionError(true);
-        // setTimeout(() => navigate("/login"));
+        setTimeout(() => navigate("/login"), 5000);
       })
       .finally(() => setLoading(false));
   }, [navigate]);
