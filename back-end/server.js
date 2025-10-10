@@ -68,6 +68,18 @@ app.post("/api/login", async (req, res) => {
   });
 });
 
+app.post("/api/verifyToken", (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  if (!token) return res.json({ valid: false });
+
+  jwt.verify(token, "your-secret-key", (err, decoded) => {
+    if (err) return res.json({ valid: false });
+    res.json({ valid: true, user: decoded });
+  });
+});
+
+
 // ============================================================================
 // SIGNUP ENDPOINT
 // ============================================================================
