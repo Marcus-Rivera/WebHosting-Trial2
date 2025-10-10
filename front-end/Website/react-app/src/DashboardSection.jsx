@@ -191,7 +191,7 @@ const DashboardSection = () => {
           </div>
           {/* Apply button */}
           <div className="flex  items-end gap-2">
-            <button className="px-3 py-1 bg-green-600 text-white text-sm rounded mr-2">
+            <button className="px-3 py-1 bg-green-600 text-white text-sm rounded mr-2 cursor-pointer">
               Apply
             </button>
             <OpenInNewIcon className="text-gray-400" />
