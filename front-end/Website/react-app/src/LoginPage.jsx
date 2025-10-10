@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [errors, setErrors] = useState({});
   const [alertMessage, setAlertMessage] = useState("");
   const [alertSeverity, setAlertSeverity] = useState("error"); // For MUI Alert
+  const [submitted, setSubmitted] = useState(false); // Track if form was submitted
   const navigate = useNavigate();
 
   // Auto-hide alert after 5 seconds
@@ -24,16 +25,14 @@ export default function LoginPage() {
   }, [alertMessage]);
 
   const validateField = (fieldName, value) => {
-    let fieldErrors = { ...errors };
+    let fieldErrors = {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (fieldName === "email") {
-      if (!value) {
+      if (!value.trim()) {
         fieldErrors.email = "Email is required";
       } else if (!emailRegex.test(value)) {
         fieldErrors.email = "Enter a valid email address";
-      } else {
-        delete fieldErrors.email; // Clear error if valid
       }
     }
 
@@ -42,37 +41,44 @@ export default function LoginPage() {
         fieldErrors.password = "Password is required";
       } else if (value.length < 6) {
         fieldErrors.password = "Password must be at least 6 characters";
-      } else {
-        delete fieldErrors.password; // Clear error if valid
       }
     }
 
-    setErrors(fieldErrors);
+    // Merge with existing errors (for other fields, if any)
+    setErrors((prevErrors) => ({ ...prevErrors, ...fieldErrors }));
+    return Object.keys(fieldErrors).length === 0;
   };
 
   const validateForm = () => {
-    validateField("email", email);
-    validateField("password", password);
-    return Object.keys(errors).length === 0;
+    const emailValid = validateField("email", email);
+    const passwordValid = validateField("password", password);
+    return emailValid && passwordValid;
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    if (name === "email") setEmail(value);
-    if (name === "password") setPassword(value);
-    // Validate on change for real-time feedback
-    validateField(name, value);
-  };
-
-  const handleBlur = (e) => {
-    const { name } = e.target;
-    validateField(name, e.target.value);
+    if (name === "email") {
+      setEmail(value);
+      // Clear email error on typing after submission
+      if (submitted && errors.email) {
+        setErrors((prev) => ({ ...prev, email: "" }));
+      }
+    }
+    if (name === "password") {
+      setPassword(value);
+      // Clear password error on typing after submission
+      if (submitted && errors.password) {
+        setErrors((prev) => ({ ...prev, password: "" }));
+      }
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Run full validation
+    // Mark as submitted and run full validation
+    setSubmitted(true);
+
     if (!validateForm()) {
       setAlertMessage("Please fix the errors below");
       setAlertSeverity("error");
@@ -92,11 +98,12 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Success: Clear form and navigate
+        // Success: Clear form, errors, and submitted state
         sessionStorage.setItem("token", data.token);
         setEmail("");
         setPassword("");
         setErrors({});
+        setSubmitted(false);
         const role = data.user.role;
         if (role === "admin") {
           navigate("/admin");
@@ -108,7 +115,7 @@ export default function LoginPage() {
         const errorMsg = data.message || "Invalid email or password";
         setAlertMessage(errorMsg);
         setAlertSeverity("error");
-        // Highlight fields on server error (optional: assume email/password invalid)
+        // Highlight fields on server error (assume email/password invalid)
         setErrors({ email: "Invalid credentials", password: "Invalid credentials" });
       }
 
@@ -144,7 +151,7 @@ export default function LoginPage() {
                 htmlFor="email"
                 className="block text-md font-bold font-inter text-gray-600"
               >
-                Email{errors.email ? <span className="text-red-500 ml-1">*</span> : ''}
+                Email{submitted && errors.email ? <span className="text-red-500 ml-1">*</span> : ''}
               </label>
               <input
                 id="email"
@@ -152,17 +159,16 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={handleInputChange}
-                onBlur={handleBlur}
                 className={`mt-1 w-full rounded-lg border p-2 focus:outline-none focus:ring-2 bg-[#BAE8E8] ${
-                  errors.email
+                  submitted && errors.email
                     ? "border-red-500 focus:ring-red-500 focus:border-red-500"
                     : "border-[#272343] focus:border-blue-500 focus:ring-blue-500"
                 }`}
                 placeholder="Enter your email"
-                aria-invalid={!!errors.email}
-                aria-describedby={errors.email ? "email-error" : undefined}
+                aria-invalid={submitted && !!errors.email}
+                aria-describedby={submitted && errors.email ? "email-error" : undefined}
               />
-              {errors.email && (
+              {submitted && errors.email && (
                 <p id="email-error" className="mt-1 text-sm text-red-500">{errors.email}</p>
               )}
             </div>
@@ -173,7 +179,7 @@ export default function LoginPage() {
                 htmlFor="password"
                 className="block text-md font-bold text-gray-600"
               >
-                Password{errors.password ? <span className="text-red-500 ml-1">*</span> : ''}
+                Password{submitted && errors.password ? <span className="text-red-500 ml-1">*</span> : ''}
               </label>
               <input
                 id="password"
@@ -181,17 +187,16 @@ export default function LoginPage() {
                 type="password"
                 value={password}
                 onChange={handleInputChange}
-                onBlur={handleBlur}
                 className={`mt-1 w-full rounded-lg border p-2 focus:outline-none focus:ring-2 bg-[#BAE8E8] ${
-                  errors.password
+                  submitted && errors.password
                     ? "border-red-500 focus:ring-red-500 focus:border-red-500"
                     : "border-[#272343] focus:border-blue-500 focus:ring-blue-500"
                 }`}
                 placeholder="Enter your password"
-                aria-invalid={!!errors.password}
-                aria-describedby={errors.password ? "password-error" : undefined}
+                aria-invalid={submitted && !!errors.password}
+                aria-describedby={submitted && errors.password ? "password-error" : undefined}
               />
-              {errors.password && (
+              {submitted && errors.password && (
                 <p id="password-error" className="mt-1 text-sm text-red-500">{errors.password}</p>
               )}
             </div>
