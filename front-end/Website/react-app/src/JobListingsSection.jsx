@@ -20,6 +20,7 @@ import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import BusinessIcon from '@mui/icons-material/Business';
+import Groups2Icon from '@mui/icons-material/Groups2';
 
 const JobListingsSection = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -41,6 +42,7 @@ const JobListingsSection = () => {
       logo: 'https://via.placeholder.com/50',
       description: 'We are looking for an experienced Frontend Developer proficient in React...',
       tags: ['React', 'TypeScript', 'Tailwind CSS'],
+      vacantleft: '5 Vacancies Left',
       remote: false,
     },
     {
@@ -54,6 +56,7 @@ const JobListingsSection = () => {
       logo: 'https://via.placeholder.com/50',
       description: 'Join our creative team to design user-centric digital experiences...',
       tags: ['Figma', 'Adobe XD', 'UI/UX'],
+      vacantleft: '5 Vacancies Left',
       remote: true,
     },
     {
@@ -67,6 +70,7 @@ const JobListingsSection = () => {
       logo: 'https://via.placeholder.com/50',
       description: 'Build scalable backend systems using Node.js and PostgreSQL...',
       tags: ['Node.js', 'PostgreSQL', 'AWS'],
+      vacantleft: '5 Vacancies Left',
       remote: true,
     },
     {
@@ -80,6 +84,7 @@ const JobListingsSection = () => {
       logo: 'https://via.placeholder.com/50',
       description: 'Looking for a versatile developer comfortable with both frontend and backend...',
       tags: ['React', 'Node.js', 'MongoDB'],
+      vacantleft: '5 Vacancies Left',
       remote: false,
     },
     {
@@ -93,6 +98,7 @@ const JobListingsSection = () => {
       logo: 'https://via.placeholder.com/50',
       description: 'Develop cross-platform mobile applications using React Native...',
       tags: ['React Native', 'iOS', 'Android'],
+      vacantleft: '5 Vacancies Left',
       remote: true,
     },
     {
@@ -106,6 +112,7 @@ const JobListingsSection = () => {
       logo: 'https://via.placeholder.com/50',
       description: 'Manage cloud infrastructure and CI/CD pipelines...',
       tags: ['AWS', 'Docker', 'Kubernetes'],
+      vacantleft: '5 Vacancies Left',
       remote: false,
     },
   ];
@@ -183,9 +190,13 @@ const JobListingsSection = () => {
             <AccessTimeIcon fontSize="small" sx={{ color: '#FBDA23' }} />
             <span className="text-sm">{job.posted}</span>
           </div>
+          <div className="flex items-center gap-2 text-gray-600">
+            <Groups2Icon fontSize="small" sx={{ color: '#FBDA23' }} />
+            <span className="text-sm">{job.vacantleft}</span>
+          </div>
         </div>
 
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center">   
           <Button
             variant="contained"
             sx={{
