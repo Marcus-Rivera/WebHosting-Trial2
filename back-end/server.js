@@ -164,6 +164,19 @@ app.put("/api/users/:user_id", (req, res) => {
   });
 });
 
+// ============================================================================
+// JOB FETCH
+// ============================================================================
+app.get("/api/jobs", (req, res) => {
+  const query = `SELECT job_id, title, description, location, min_salary, max_salary, availability FROM job`
+  db.all(query, [], (err, rows) => {
+    if (err) {
+      console.error("Error fetching jobs", err);
+      return res.status(500).json({ message: "Database Error"});
+    }
+    res.json(rows);
+  })
+})
 
 // ============================================================================
 // SERVER START

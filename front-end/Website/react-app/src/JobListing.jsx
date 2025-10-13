@@ -1,19 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 const JobListing = () => {
-  const [jobs, setJobs] = useState([
-    { 
-      id: 1, 
-      title: "Software Engineer", 
-      location: "Mandaluyong", 
-      description: "We are looking for a Software Engineer to develop, combine, and maintain software applications. For new services setting class and efficient code, collaborating with cross-functional teams, and ensuring software quality and performance.", 
-      minSalary: 45000,
-      maxSalary: 65000,
-      availability: 3,
-      action: "Edit" 
-    },
-  ]);
-
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [newJob, setNewJob] = useState({
     title: "",
@@ -25,6 +15,60 @@ const JobListing = () => {
   });
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState("");
+
+  // Fetch jobs from backend on component mount
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/jobs");
+        if (!response.ok) {
+          throw new Error("Failed to fetch jobs");
+        }
+        const data = await response.json();
+
+        // Format data for frontend consistency
+        const formattedJobs = data.map((job) => ({
+          id: job.job_id,
+          title: job.title,
+          location: job.location,
+          description: job.description,
+          minSalary: job.min_salary,
+          maxSalary: job.max_salary,
+          availability: job.availability,
+          action: "Edit",
+        }));
+
+        setJobs(formattedJobs);
+      } catch (err) {
+        console.error("Error fetching jobs:", err);
+        setError("Failed to load job listings. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobs();
+  }, []);
+
+  // Helper formatters
+  const formatSalary = (min, max) =>
+    `₱${min.toLocaleString()} - ₱${max.toLocaleString()}`;
+
+  const formatAvailability = (a) => parseInt(a, 10);
+
+  if (loading) {
+    return (
+      <div className="text-center py-10 text-gray-600">Loading jobs...</div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-10 text-red-600 font-medium">{error}</div>
+    );
+  }
+
+  
 
   const openAddModal = () => {
     setShowAddModal(true);
@@ -151,15 +195,6 @@ const JobListing = () => {
     }
   };
 
-  // Format availability to remove leading zeros
-  const formatAvailability = (availability) => {
-    return parseInt(availability, 10);
-  };
-
-  // Format salary for display
-  const formatSalary = (minSalary, maxSalary) => {
-    return `₱${minSalary.toLocaleString()} - ₱${maxSalary.toLocaleString()}`;
-  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[30px]">
@@ -239,34 +274,38 @@ const JobListing = () => {
 
       {/* Job Table - Desktop View */}
       <div className="hidden sm:block bg-white shadow-md rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job Title</th>
-              <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-              <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Salary Range</th>
-              <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-              <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Availability</th>
-              <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {jobs.map((job) => (
-              <tr key={job.id} className="hover:bg-gray-50">
-                <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm font-medium text-gray-900">{job.title}</td>
-                <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm text-gray-500">{job.location}</td>
-                <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm font-semibold text-green-600">
-                  {formatSalary(job.minSalary, job.maxSalary)}
-                </td>
-                <td className="px-4 py-4 lg:px-6 text-sm text-gray-500 max-w-md">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job Title</th>
+                <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Salary Range</th>
+                <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Availability</th>
+                <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {jobs.map((job) => (
+                <tr key={job.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {job.title}
+                  </td>
+                  <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm text-gray-500">
+                    {job.location}
+                  </td>
+                  <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm text-green-600 font-semibold">
+                    {formatSalary(job.minSalary, job.maxSalary)}
+                  </td>
+                  <td className="px-4 py-4 lg:px-6 text-sm text-gray-500 max-w-md">
                   <div className="line-clamp-3">{job.description}</div>
                 </td>
-                <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm">
-                  <span className="inline-flex px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">
-                    {formatAvailability(job.availability)}
-                  </span>
-                </td>
-                <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm">
+                    <span className="inline-flex px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">
+                      {formatAvailability(job.availability)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm text-gray-500">
                   <div className="flex space-x-2">
                     <select 
                       value={job.action}
@@ -285,11 +324,11 @@ const JobListing = () => {
                     </button>
                   </div>
                 </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
       {/* Add Job Modal - Responsive */}
       {showAddModal && (
