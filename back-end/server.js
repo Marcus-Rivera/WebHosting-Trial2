@@ -179,6 +179,31 @@ app.get("/api/jobs", (req, res) => {
 })
 
 // ============================================================================
+// JOB UPDATE
+// ============================================================================
+app.put("/api/job/:job_id"), (req, res) => {
+  const { job_id } = req.params;
+  const { title, location, min_salary, max_salary, description, availability  } = req.body;
+
+  const query = `
+    UPDATE job SET title = ?, location = ?, min_salary = ?, max_salary = ?, description = ?, availability = ? WHERE job_id = ?;
+  `;
+
+   const params = [title, location, min_salary, max_salary, description, availability, job_id];
+  db.run(query, params, function (err) {
+    if (err) {
+      console.error("Error updating job:", err);
+      return res.status(500).json({ message: "Database erro"});
+    }
+
+    if (this.changes === 0) {
+      return res.status(404).json({ message: "Job nor found"});
+    }
+
+    res.json({ message: "Job updated successfully"})
+  })
+}
+// ============================================================================
 // SERVER START
 // ============================================================================
 // Start Express server on port 5000
