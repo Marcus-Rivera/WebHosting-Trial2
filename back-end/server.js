@@ -129,6 +129,43 @@ app.post("/api/signup", async (req, res) => {
 });
 
 // ============================================================================
+// FETCH ALL USERS
+// ============================================================================
+app.get("/api/users", (req, res) => {
+  const query = `SELECT user_id, username, email, role, status FROM user`;
+  db.all(query, [], (err, rows) => {
+    if (err) {
+      console.error("Error fetching users:", err);
+      return res.status(500).json({ message: "Database error" });
+    }
+    res.json(rows);
+  });
+});
+
+// ============================================================================
+// UPDATE USER STATUS
+// ============================================================================
+app.put("/api/users/:user_id", (req, res) => {
+  const { user_id } = req.params;
+  const { status } = req.body;
+
+  const query = `UPDATE user SET status = ? WHERE user_id = ?`;
+  db.run(query, [status, user_id], function (err) {
+    if (err) {
+      console.error("Error updating user:", err);
+      return res.status(500).json({ message: "Database error" });
+    }
+
+    if (this.changes === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({ message: "User status updated successfully" });
+  });
+});
+
+
+// ============================================================================
 // SERVER START
 // ============================================================================
 // Start Express server on port 5000
