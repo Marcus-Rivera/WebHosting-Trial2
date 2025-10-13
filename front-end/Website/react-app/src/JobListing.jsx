@@ -35,7 +35,7 @@ const JobListing = () => {
           minSalary: job.min_salary,
           maxSalary: job.max_salary,
           availability: job.availability,
-          action: "Edit",
+          action: "Edit" 
         }));
 
         setJobs(formattedJobs);
@@ -250,21 +250,33 @@ const JobListing = () => {
                 </span>
                 
                 <div className="flex space-x-2">
-                  <select 
-                    value={job.action}
-                    onChange={(e) => handleActionChange(job.id, e.target.value)}
-                    className="block px-3 py-1 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  >
-                    <option value="Edit">Edit</option>
-                    <option value="View">View</option>
-                    <option value="Archive">Archive</option>
-                  </select>
-                  <button 
-                    onClick={() => deleteJob(job.id)}
-                    className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-300 text-xs"
-                  >
-                    Delete
-                  </button>
+                  {/* Changed from dropdown to buttons */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <button 
+                      onClick={() => handleActionChange(job.id, "Edit")}
+                      className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs"
+                    >
+                      Edit
+                    </button>
+                    <button 
+                      onClick={() => handleActionChange(job.id, "View")}
+                      className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-xs"
+                    >
+                      View
+                    </button>
+                    <button 
+                      onClick={() => handleActionChange(job.id, "Archive")}
+                      className="px-3 py-1 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors text-xs"
+                    >
+                      Archive
+                    </button>
+                    <button 
+                      onClick={() => deleteJob(job.id)}
+                      className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-xs"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -307,21 +319,33 @@ const JobListing = () => {
                   </td>
                   <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm text-gray-500">
                   <div className="flex space-x-2">
-                    <select 
-                      value={job.action}
-                      onChange={(e) => handleActionChange(job.id, e.target.value)}
-                      className="block px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    >
-                      <option value="Edit">Edit</option>
-                      <option value="View">View</option>
-                      <option value="Archive">Archive</option>
-                    </select>
-                    <button 
-                      onClick={() => deleteJob(job.id)}
-                      className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-300 text-xs"
-                    >
-                      Delete
-                    </button>
+                    {/* Changed from dropdown to buttons */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <button 
+                        onClick={() => handleActionChange(job.id, "Edit")}
+                        className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs"
+                      >
+                        Edit
+                      </button>
+                      <button 
+                        onClick={() => handleActionChange(job.id, "View")}
+                        className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-xs"
+                      >
+                        View
+                      </button>
+                      <button 
+                        onClick={() => handleActionChange(job.id, "Archive")}
+                        className="px-3 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors text-xs"
+                      >
+                        Archive
+                      </button>
+                      <button 
+                        onClick={() => deleteJob(job.id)}
+                        className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-xs"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </td>
                 </tr>
