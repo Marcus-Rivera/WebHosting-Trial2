@@ -19,11 +19,11 @@ const SidebarContent = ({ onClose, isMobile }) => {
   useEffect(() => {
     if (userData) {
       // ✅ If user is not admin, show modal instead of directly redirecting
-      // if (userData.role !== "admin") {
-      //   setAccessError(true);
-      //   setTimeout(() => navigate("/login"), 5000);
-      //   return; // stop here, don’t fetch profile
-      // }
+      if (userData.role !== "admin") {
+        setAccessError(true);
+        // setTimeout(() => navigate("/login"), 5000);
+        return; // stop here, don’t fetch profile
+      }
 
       // ✅ Only fetch profile for valid admin users
       if (userData.email) {
