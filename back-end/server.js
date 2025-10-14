@@ -87,46 +87,60 @@ app.post("/api/verifyToken", (req, res) => {
 app.post("/api/signup", async (req, res) => {
   const { firstname, lastname, birthday, gender, username, email, phone, password } = req.body;
 
-  // Ensure required fields are provided
+  // Validate required fields
   if (!email || !password) {
     return res.status(400).json({ status: "error", message: "Email and password are required" });
   }
 
-  // Prepare data for insertion
-  const fullName = `${firstname} ${lastname}`;
   const role = "job_seeker";
 
-  // Hash password before storing in the database
-  const password_hash = await bcrypt.hash(password, 10);
+  try {
+    // Hash password securely
+    const password_hash = await bcrypt.hash(password, 10);
 
-  // Insert new user into the database
-  const stmt = db.prepare(
-    `INSERT INTO user (name, birthday, gender, username, email, phone, password_hash, role)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-  );
+    // Prepare SQL statement
+    const stmt = db.prepare(`
+      INSERT INTO user (firstname, lastname, birthday, gender, username, email, phone, password_hash, role)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
 
-  stmt.run(fullName, birthday, gender, username, email, phone, password_hash, role, function (err) {
-    if (err) {
-      // Handle unique constraint (duplicate email)
-      if (err.message.includes("UNIQUE constraint")) {
-        return res.status(400).json({ status: "error", message: "Email already exists" });
+    // Execute the statement
+    stmt.run(
+      firstname,
+      lastname,
+      birthday,
+      gender,
+      username,
+      email,
+      phone,
+      password_hash,
+      role,
+      function (err) {
+        if (err) {
+          // Handle duplicate email or other DB errors
+          if (err.message.includes("UNIQUE constraint")) {
+            return res.status(400).json({ status: "error", message: "Email already exists" });
+          }
+          console.error("DB Error:", err);
+          return res.status(500).json({ status: "error", message: "Database error" });
+        }
+
+        // Success response
+        res.json({
+          status: "success",
+          message: "User registered successfully",
+          userId: this.lastID,
+        });
       }
+    );
 
-      // Handle other database errors
-      console.error("DB Error:", err);
-      return res.status(500).json({ status: "error", message: "Database error" });
-    }
-
-    // Successful user registration
-    res.json({
-      status: "success",
-      message: "User registered successfully",
-      userId: this.lastID,
-    });
-  });
-
-  stmt.finalize(); // Finalize statement to release resources
+    stmt.finalize();
+  } catch (error) {
+    console.error("Signup error:", error);
+    res.status(500).json({ status: "error", message: "Server error" });
+  }
 });
+
 
 // ============================================================================
 // FETCH ALL USERS
@@ -244,12 +258,11 @@ app.put("/api/profile/:email", (req, res) => {
     postgraduate,
   } = req.body;
 
-  const fullName = `${firstname} ${lastname}`.trim();
-
   const query = `
     UPDATE user
     SET 
-      name = ?, 
+      firstname = ?, 
+      lastname = ?,
       gender = ?, 
       birthday = ?, 
       address = ?, 
@@ -263,7 +276,8 @@ app.put("/api/profile/:email", (req, res) => {
   `;
 
   const params = [
-    fullName,
+    firstname,
+    lastname,
     gender,
     birthday,
     address,

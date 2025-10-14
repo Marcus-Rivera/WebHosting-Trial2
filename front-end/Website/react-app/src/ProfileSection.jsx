@@ -38,10 +38,9 @@ const ProfileSection = () => {
         .then((res) => res.json())
         .then((data) => {
           if (data) {
-            const nameParts = data.name ? data.name.split(" ") : [];
             setFormData({
-              firstname: nameParts[0] || "",
-              lastname: nameParts.slice(1).join(" ") || "",
+              firstname: data.firstname || "",
+              lastname: data.lastname || "",
               gender: data.gender || "",
               birthday: data.birthday || "",
               address: data.address || "",
@@ -58,6 +57,7 @@ const ProfileSection = () => {
         .catch((err) => console.error("Error loading profile:", err));
     }
   }, [userData]);
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
