@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Drawer, IconButton, Avatar, Chip } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import LogoutIcon from "@mui/icons-material/Logout";
@@ -8,6 +8,45 @@ import { Link, useLocation, useNavigate, Outlet } from "react-router-dom";
 const SidebarContent = ({ onClose, isMobile }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  
+  const [userData, setUserData] = useState(null);
+
+  // ✅ Load user info from token and fetch full data
+  useEffect(() => {
+    const token = sessionStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      const decoded = JSON.parse(atob(token.split(".")[1])); // decode JWT payload
+      const email = decoded.email;
+      if (email) {
+        fetch(`http://localhost:5000/api/profile/${email}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data) setUserData(data);
+          })
+          .catch((err) => console.error("Error loading profile:", err));
+      }
+    } catch (error) {
+      console.error("Invalid token:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    const storedUser = sessionStorage.getItem("userData");
+    if (storedUser) {
+      setUserData(JSON.parse(storedUser));
+    }
+
+    // ✅ Listen for updates
+    const handleUserUpdate = () => {
+      const updated = sessionStorage.getItem("userData");
+      if (updated) setUserData(JSON.parse(updated));
+    };
+
+    window.addEventListener("userDataUpdated", handleUserUpdate);
+    return () => window.removeEventListener("userDataUpdated", handleUserUpdate);
+  }, []);
   
   // Determine active item based on current route
   const getActive = () => {
@@ -96,7 +135,9 @@ const SidebarContent = ({ onClose, isMobile }) => {
           <div className="absolute bottom-1 right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white"></div>
         </div>
         <h4 className="mt-3 text-lg font-bold text-[#272343]">
-          Rebecca Oscar
+          {userData
+            ? `${userData.firstname || ""} ${userData.lastname || ""}`
+            : "Your Name"}
         </h4>
         <Chip 
           label="Premium Member" 
