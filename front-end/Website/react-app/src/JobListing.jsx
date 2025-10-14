@@ -5,12 +5,22 @@ const JobListing = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [newJob, setNewJob] = useState({
     title: "",
     location: "",
     description: "",
-    minSalary: "",
-    maxSalary: "",
+    min_salary: "",
+    max_salary: "",
+    availability: 1
+  });
+  const [editingJob, setEditingJob] = useState({
+    id: "",
+    title: "",
+    location: "",
+    description: "",
+    min_salary: "",
+    max_salary: "",
     availability: 1
   });
   const [errors, setErrors] = useState({});
@@ -32,8 +42,8 @@ const JobListing = () => {
           title: job.title,
           location: job.location,
           description: job.description,
-          minSalary: job.min_salary,
-          maxSalary: job.max_salary,
+          min_salary: job.min_salary,
+          max_salary: job.max_salary,
           availability: job.availability,
           action: "Edit" 
         }));
@@ -68,8 +78,6 @@ const JobListing = () => {
     );
   }
 
-  
-
   const openAddModal = () => {
     setShowAddModal(true);
     setErrors({});
@@ -78,7 +86,39 @@ const JobListing = () => {
 
   const closeAddModal = () => {
     setShowAddModal(false);
-    setNewJob({ title: "", location: "", description: "", minSalary: "", maxSalary: "", availability: 1 });
+    setNewJob({ title: "", location: "", description: "", min_salary: "", max_salary: "", availability: 1 });
+    setErrors({});
+    setSuccessMessage("");
+  };
+
+  // Open edit modal and populate with job data (convert to lowercase)
+  const openEditModal = (job) => {
+    setEditingJob({
+      id: job.id,
+      title: job.title.toLowerCase(),        // Convert to lowercase
+      location: job.location.toLowerCase(),  // Convert to lowercase
+      description: job.description.toLowerCase(), // Convert to lowercase
+      min_salary: job.min_salary.toString(),
+      max_salary: job.max_salary.toString(),
+      availability: job.availability
+    });
+    setShowEditModal(true);
+    setErrors({});
+    setSuccessMessage("");
+  };
+
+  // Close edit modal
+  const closeEditModal = () => {
+    setShowEditModal(false);
+    setEditingJob({
+      id: "",
+      title: "",
+      location: "",
+      description: "",
+      min_salary: "",
+      max_salary: "",
+      availability: 1
+    });
     setErrors({});
     setSuccessMessage("");
   };
@@ -86,7 +126,7 @@ const JobListing = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     // Only allow numbers for salary fields
-    if ((name === 'minSalary' || name === 'maxSalary') && value !== '' && !/^\d+$/.test(value)) {
+    if ((name === 'min_salary' || name === 'max_salary') && value !== '' && !/^\d+$/.test(value)) {
       return;
     }
     setNewJob((prev) => ({ ...prev, [name]: value }));
@@ -96,6 +136,23 @@ const JobListing = () => {
       setErrors(prev => ({ ...prev, [name]: "" }));
     }
   };
+
+  // Handle edit form input changes
+const handleEditInputChange = (e) => {
+  const { name, value } = e.target;
+  
+  // Only allow numbers for salary fields
+  if ((name === 'min_salary' || name === 'max_salary') && value !== '' && !/^\d+$/.test(value)) {
+    return;
+  }
+  
+  setEditingJob(prev => ({ ...prev, [name]: value }));
+  
+  // Clear error when user starts typing
+  if (errors[name]) {
+    setErrors(prev => ({ ...prev, [name]: "" }));
+  }
+};
 
   const validateForm = () => {
     const newErrors = {};
@@ -116,21 +173,63 @@ const JobListing = () => {
       newErrors.description = "Description must be at least 10 characters";
     }
 
-    if (!newJob.minSalary) {
-      newErrors.minSalary = "Minimum salary is required";
-    } else if (parseInt(newJob.minSalary) < 0) {
-      newErrors.minSalary = "Minimum salary cannot be negative";
+    if (!newJob.min_salary) {
+      newErrors.min_salary = "Minimum salary is required";
+    } else if (parseInt(newJob.min_salary) < 0) {
+      newErrors.min_salary = "Minimum salary cannot be negative";
     }
 
-    if (!newJob.maxSalary) {
-      newErrors.maxSalary = "Maximum salary is required";
-    } else if (parseInt(newJob.maxSalary) < 0) {
-      newErrors.maxSalary = "Maximum salary cannot be negative";
-    } else if (parseInt(newJob.maxSalary) < parseInt(newJob.minSalary)) {
-      newErrors.maxSalary = "Maximum salary must be greater than minimum salary";
+    if (!newJob.max_salary) {
+      newErrors.max_salary = "Maximum salary is required";
+    } else if (parseInt(newJob.max_salary) < 0) {
+      newErrors.max_salary = "Maximum salary cannot be negative";
+    } else if (parseInt(newJob.max_salary) < parseInt(newJob.min_salary)) {
+      newErrors.max_salary = "Maximum salary must be greater than minimum salary";
     }
 
     if (newJob.availability < 1) {
+      newErrors.availability = "Availability must be at least 1";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Validate edit form
+  const validateEditForm = () => {
+    const newErrors = {};
+
+    if (!editingJob.title.trim()) {
+      newErrors.title = "Job title is required";
+    } else if (editingJob.title.trim().length < 3) {
+      newErrors.title = "Job title must be at least 3 characters";
+    }
+
+    if (!editingJob.location.trim()) {
+      newErrors.location = "Location is required";
+    }
+
+    if (!editingJob.description.trim()) {
+      newErrors.description = "Description is required";
+    } else if (editingJob.description.trim().length < 10) {
+      newErrors.description = "Description must be at least 10 characters";
+    }
+
+    if (!editingJob.min_salary) {
+      newErrors.min_salary = "Minimum salary is required";
+    } else if (parseInt(editingJob.min_salary) < 0) {
+      newErrors.min_salary = "Minimum salary cannot be negative";
+    }
+
+    if (!editingJob.max_salary) {
+      newErrors.max_salary = "Maximum salary is required";
+    } else if (parseInt(editingJob.max_salary) < 0) {
+      newErrors.max_salary = "Maximum salary cannot be negative";
+    } else if (parseInt(editingJob.max_salary) < parseInt(editingJob.min_salary)) {
+      newErrors.max_salary = "Maximum salary must be greater than minimum salary";
+    }
+
+    if (editingJob.availability < 1) {
       newErrors.availability = "Availability must be at least 1";
     }
 
@@ -147,8 +246,8 @@ const JobListing = () => {
       const jobToAdd = {
         id: Date.now(),
         ...newJob,
-        minSalary: parseInt(newJob.minSalary),
-        maxSalary: parseInt(newJob.maxSalary),
+        min_salary: parseInt(newJob.min_salary),
+        max_salary: parseInt(newJob.max_salary),
         action: "Edit"
       };
       
@@ -164,6 +263,58 @@ const JobListing = () => {
       setErrors({ general: "Failed to add job. Please try again." });
     }
   };
+
+  // Save edited job (all values already in lowercase)
+  const saveEditedJob = async () => {
+  if (!validateEditForm()) return;
+
+  try {
+    const response = await fetch(`http://localhost:5000/api/job/${editingJob.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        title: editingJob.title,
+        location: editingJob.location,
+        min_salary: parseInt(editingJob.min_salary),
+        max_salary: parseInt(editingJob.max_salary),
+        description: editingJob.description,
+        availability: parseInt(editingJob.availability),
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to update job");
+    }
+
+    // Update frontend list after successful backend update
+    setJobs((prevJobs) =>
+      prevJobs.map((job) =>
+        job.id === editingJob.id
+          ? {
+              ...job,
+              title: editingJob.title,
+              location: editingJob.location,
+              description: editingJob.description,
+              min_salary: parseInt(editingJob.min_salary),
+              max_salary: parseInt(editingJob.max_salary),
+              availability: parseInt(editingJob.availability),
+            }
+          : job
+      )
+    );
+
+    setSuccessMessage("✅ Job updated successfully!");
+    setTimeout(() => closeEditModal(), 1500);
+  } catch (error) {
+    console.error("Error updating job:", error);
+    setErrors({ general: "Failed to update job. Please try again." });
+  }
+};
+
 
   const handleActionChange = (jobId, newAction) => {
     try {
@@ -192,9 +343,9 @@ const JobListing = () => {
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) {
       closeAddModal();
+      closeEditModal();
     }
   };
-
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[30px]">
@@ -236,7 +387,7 @@ const JobListing = () => {
                 <h3 className="text-lg font-semibold text-gray-900">{job.title}</h3>
                 <p className="text-sm text-gray-500">{job.location}</p>
                 <p className="text-sm text-green-600 font-medium mt-1">
-                  {formatSalary(job.minSalary, job.maxSalary)}
+                  {formatSalary(job.min_salary, job.max_salary)}
                 </p>
               </div>
               
@@ -253,7 +404,7 @@ const JobListing = () => {
                   {/* Changed from dropdown to buttons */}
                   <div className="grid grid-cols-2 gap-2">
                     <button 
-                      onClick={() => handleActionChange(job.id, "Edit")}
+                      onClick={() => openEditModal(job)}
                       className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs"
                     >
                       Edit
@@ -307,7 +458,7 @@ const JobListing = () => {
                     {job.location}
                   </td>
                   <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm text-green-600 font-semibold">
-                    {formatSalary(job.minSalary, job.maxSalary)}
+                    {formatSalary(job.min_salary, job.max_salary)}
                   </td>
                   <td className="px-4 py-4 lg:px-6 text-sm text-gray-500 max-w-md">
                   <div className="line-clamp-3">{job.description}</div>
@@ -322,7 +473,7 @@ const JobListing = () => {
                     {/* Changed from dropdown to buttons */}
                     <div className="grid grid-cols-2 gap-2">
                       <button 
-                        onClick={() => handleActionChange(job.id, "Edit")}
+                        onClick={() => openEditModal(job)}
                         className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs"
                       >
                         Edit
@@ -408,35 +559,35 @@ const JobListing = () => {
                 <div>
                   <input
                     type="text"
-                    name="minSalary"
-                    value={newJob.minSalary}
+                    name="min_salary"
+                    value={newJob.min_salary}
                     onChange={handleInputChange}
                     placeholder="Min Salary"
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                      errors.minSalary 
+                      errors.min_salary 
                         ? "border-red-500 focus:ring-red-500" 
                         : "border-yellow-400 focus:ring-yellow-500"
                     }`}
                   />
-                  {errors.minSalary && (
-                    <p className="text-red-500 text-sm mt-1">{errors.minSalary}</p>
+                  {errors.min_salary && (
+                    <p className="text-red-500 text-sm mt-1">{errors.min_salary}</p>
                   )}
                 </div>
                 <div>
                   <input
                     type="text"
-                    name="maxSalary"
-                    value={newJob.maxSalary}
+                    name="max_salary"
+                    value={newJob.max_salary}
                     onChange={handleInputChange}
                     placeholder="Max Salary"
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                      errors.maxSalary 
+                      errors.max_salary 
                         ? "border-red-500 focus:ring-red-500" 
                         : "border-yellow-400 focus:ring-yellow-500"
                     }`}
                   />
-                  {errors.maxSalary && (
-                    <p className="text-red-500 text-sm mt-1">{errors.maxSalary}</p>
+                  {errors.max_salary && (
+                    <p className="text-red-500 text-sm mt-1">{errors.max_salary}</p>
                   )}
                 </div>
               </div>
@@ -491,6 +642,149 @@ const JobListing = () => {
                 className="px-4 py-2 text-sm font-medium text-white bg-yellow-500 rounded-md hover:bg-yellow-600 transition-colors order-1 sm:order-2"
               >
                 Save Job
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Job Modal - Responsive */}
+      {showEditModal && (
+        <div 
+          className="fixed inset-0 flex items-center justify-center z-50 p-4"
+          onClick={handleOverlayClick}
+        >
+          <div 
+            className="bg-yellow-50 rounded-lg p-4 sm:p-6 w-full max-w-md shadow-xl border-2 border-yellow-200 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-xl font-bold text-gray-800 mb-4">Edit Job</h2>
+            
+            <div className="space-y-4">
+              <div>
+                <input
+                  type="text"
+                  name="title"
+                  value={editingJob.title}
+                  onChange={handleEditInputChange}
+                  placeholder="Job Title"
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                    errors.title 
+                      ? "border-red-500 focus:ring-red-500" 
+                      : "border-yellow-400 focus:ring-yellow-500"
+                  }`}
+                />
+                {errors.title && (
+                  <p className="text-red-500 text-sm mt-1">{errors.title}</p>
+                )}
+              </div>
+
+              <div>
+                <input
+                  type="text"
+                  name="location"
+                  value={editingJob.location}
+                  onChange={handleEditInputChange}
+                  placeholder="Location"
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                    errors.location 
+                      ? "border-red-500 focus:ring-red-500" 
+                      : "border-yellow-400 focus:ring-yellow-500"
+                  }`}
+                />
+                {errors.location && (
+                  <p className="text-red-500 text-sm mt-1">{errors.location}</p>
+                )}
+              </div>
+
+              {/* Salary Range Fields */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <input
+                    type="text"
+                    name="min_salary"
+                    value={editingJob.min_salary}
+                    onChange={handleEditInputChange}
+                    placeholder="Min Salary"
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                      errors.min_salary 
+                        ? "border-red-500 focus:ring-red-500" 
+                        : "border-yellow-400 focus:ring-yellow-500"
+                    }`}
+                  />
+                  {errors.min_salary && (
+                    <p className="text-red-500 text-sm mt-1">{errors.min_salary}</p>
+                  )}
+                </div>
+                <div>
+                  <input
+                    type="text"
+                    name="max_salary"
+                    value={editingJob.max_salary}
+                    onChange={handleEditInputChange}
+                    placeholder="Max Salary"
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                      errors.max_salary 
+                        ? "border-red-500 focus:ring-red-500" 
+                        : "border-yellow-400 focus:ring-yellow-500"
+                    }`}
+                  />
+                  {errors.max_salary && (
+                    <p className="text-red-500 text-sm mt-1">{errors.max_salary}</p>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <textarea
+                  name="description"
+                  value={editingJob.description}
+                  onChange={handleEditInputChange}
+                  placeholder="Description"
+                  rows="4"
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                    errors.description 
+                      ? "border-red-500 focus:ring-red-500" 
+                      : "border-yellow-400 focus:ring-yellow-500"
+                  }`}
+                />
+                {errors.description && (
+                  <p className="text-red-500 text-sm mt-1">{errors.description}</p>
+                )}
+              </div>
+
+              <div>
+                <input
+                  type="number"
+                  name="availability"
+                  value={editingJob.availability}
+                  onChange={handleEditInputChange}
+                  placeholder="Available Positions"
+                  min="1"
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                    errors.availability 
+                      ? "border-red-500 focus:ring-red-500" 
+                      : "border-yellow-400 focus:ring-yellow-500"
+                  }`}
+                />
+                {errors.availability && (
+                  <p className="text-red-500 text-sm mt-1">{errors.availability}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:justify-end sm:space-x-3 space-y-2 sm:space-y-0 mt-6">
+              <button
+                onClick={closeEditModal}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors order-2 sm:order-1"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveEditedJob}
+                className="px-4 py-2 text-sm font-medium text-white bg-yellow-500 rounded-md hover:bg-yellow-600 transition-colors order-1 sm:order-2"
+              >
+                Update Job
               </button>
             </div>
           </div>
