@@ -14,7 +14,7 @@ const ProfileSection = () => {
   const [showAlert, setShowAlert] = useState(false);
   const [alertMsg, setAlertMsg] = useState("");
   const [alertType, setAlertType] = useState("success");
-  
+
   const [formData, setFormData] = useState({
     firstname: "",
     lastname: "",
@@ -31,16 +31,39 @@ const ProfileSection = () => {
 
   const [originalData, setOriginalData] = useState({});
 
-  // Initialize original data when component mounts
+  // Load user profile from backend
   useEffect(() => {
-    setOriginalData(formData);
-  }, []);
+    if (userData?.email) {
+      fetch(`http://localhost:5000/api/profile/${userData.email}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data) {
+            const nameParts = data.name ? data.name.split(" ") : [];
+            setFormData({
+              firstname: nameParts[0] || "",
+              lastname: nameParts.slice(1).join(" ") || "",
+              gender: data.gender || "",
+              birthday: data.birthday || "",
+              address: data.address || "",
+              phone: data.phone || "",
+              bio: data.bio || "",
+              certification: data.certification || "",
+              seniorHigh: data.seniorHigh || "",
+              undergraduate: data.undergraduate || "",
+              postgraduate: data.postgraduate || "",
+            });
+            setOriginalData(data);
+          }
+        })
+        .catch((err) => console.error("Error loading profile:", err));
+    }
+  }, [userData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -48,21 +71,38 @@ const ProfileSection = () => {
     setIsEditing(true);
   };
 
-  const handleSave = () => {
-    // Save logic - for now just update state
-    setAlertType("success");
-    setAlertMsg("Profile updated successfully!");
-    setShowAlert(true);
-    setOriginalData(formData);
-    setIsEditing(false);
-    setTimeout(() => setShowAlert(false), 3000);
-    
-    // TODO: Add backend API call here when ready
-    console.log("Profile data to save:", formData);
+  const handleSave = async () => {
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/profile/${userData.email}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        }
+      );
+
+      const result = await res.json();
+      if (res.ok) {
+        setAlertType("success");
+        setAlertMsg("Profile updated successfully!");
+        setOriginalData(formData);
+        setIsEditing(false);
+      } else {
+        setAlertType("error");
+        setAlertMsg(result.message || "Update failed");
+      }
+    } catch (err) {
+      console.error("Error saving profile:", err);
+      setAlertType("error");
+      setAlertMsg("Error saving profile");
+    } finally {
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 3000);
+    }
   };
 
   const handleCancel = () => {
-    // Restore original data
     setFormData(originalData);
     setIsEditing(false);
   };
@@ -112,9 +152,9 @@ const ProfileSection = () => {
             )}
           </div>
           <h2 className="mt-4 text-xl text-[#272343] font-bold">
-            {formData.firstname && formData.lastname 
-              ? `${formData.firstname} ${formData.lastname}` 
-              : "Your Name"}
+            {formData.firstname && formData.lastname
+              ? `${formData.firstname} ${formData.lastname}`
+              : userData?.name || "Your Name"}
           </h2>
           <p className="text-sm text-[#272343] font-semibold">
             {userData?.email || "your.email@example.com"}
@@ -127,7 +167,6 @@ const ProfileSection = () => {
 
         {/* Right Form */}
         <div className="flex-1">
-          {/* Edit Mode Indicator */}
           {isEditing && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-2">
               <EditIcon className="text-blue-600" />
@@ -137,13 +176,14 @@ const ProfileSection = () => {
             </div>
           )}
 
-          {/* Basic Info */}
           <h3 className="font-bold italic text-lg text-[#272343]">
             Basic Information
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 text-[#272343]">
             <div>
-              <label className="block text-sm font-semibold mb-1">Firstname:</label>
+              <label className="block text-sm font-semibold mb-1">
+                Firstname:
+              </label>
               <input
                 type="text"
                 name="firstname"
@@ -155,7 +195,9 @@ const ProfileSection = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold mb-1">Lastname:</label>
+              <label className="block text-sm font-semibold mb-1">
+                Lastname:
+              </label>
               <input
                 type="text"
                 name="lastname"
@@ -182,7 +224,9 @@ const ProfileSection = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-semibold mb-1">Birthday:</label>
+              <label className="block text-sm font-semibold mb-1">
+                Birthday:
+              </label>
               <input
                 type="date"
                 name="birthday"
@@ -193,7 +237,9 @@ const ProfileSection = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold mb-1">Address:</label>
+              <label className="block text-sm font-semibold mb-1">
+                Address:
+              </label>
               <input
                 type="text"
                 name="address"
@@ -262,7 +308,9 @@ const ProfileSection = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold mb-1">UnderGraduate:</label>
+              <label className="block text-sm font-semibold mb-1">
+                UnderGraduate:
+              </label>
               <input
                 type="text"
                 name="undergraduate"
@@ -274,7 +322,9 @@ const ProfileSection = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold mb-1">PostGraduate:</label>
+              <label className="block text-sm font-semibold mb-1">
+                PostGraduate:
+              </label>
               <input
                 type="text"
                 name="postgraduate"

@@ -52,7 +52,7 @@ app.post("/api/login", async (req, res) => {
 
 
     // Create JWT (expires in 1 hour) 
-    const token = jwt.sign({ id: user.id, email: user.email }, SECRET_KEY, 
+    const token = jwt.sign({ id: user.user_id, email: user.email }, SECRET_KEY, 
       {expiresIn: "1h",});
 
      // Successful authentication → send user info (but omit sensitive data)
@@ -181,7 +181,7 @@ app.get("/api/jobs", (req, res) => {
 // ============================================================================
 // JOB UPDATE
 // ============================================================================
-app.put("/api/job/:job_id"), (req, res) => {
+app.put("/api/job/:job_id", (req, res) => {
   const { job_id } = req.params;
   const { title, location, min_salary, max_salary, description, availability  } = req.body;
 
@@ -202,7 +202,96 @@ app.put("/api/job/:job_id"), (req, res) => {
 
     res.json({ message: "Job updated successfully"})
   })
-}
+})
+
+// ============================================================================
+// FETCH PROFILE
+// ============================================================================
+app.get("/api/profile/:email", (req, res) => {
+  const { email } = req.params;
+  const query = `SELECT * FROM user WHERE email = ?`;
+
+  db.get(query, [email], (err, user) => {
+    if (err) {
+      console.error("Error fetching profile:", err);
+      return res.status(500).json({ message: "Database error" });
+    }
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json(user);
+  });
+});
+
+// ============================================================================
+// UPDATE PROFILE
+// ============================================================================
+app.put("/api/profile/:email", (req, res) => {
+  const { email } = req.params;
+  const {
+    firstname,
+    lastname,
+    gender,
+    birthday,
+    address,
+    phone,
+    bio,
+    certification,
+    seniorHigh,
+    undergraduate,
+    postgraduate,
+  } = req.body;
+
+  const fullName = `${firstname} ${lastname}`.trim();
+
+  const query = `
+    UPDATE user
+    SET 
+      name = ?, 
+      gender = ?, 
+      birthday = ?, 
+      address = ?, 
+      phone = ?, 
+      bio = ?, 
+      certification = ?, 
+      seniorHigh = ?, 
+      undergraduate = ?, 
+      postgraduate = ?
+    WHERE email = ?;
+  `;
+
+  const params = [
+    fullName,
+    gender,
+    birthday,
+    address,
+    phone,
+    bio,
+    certification,
+    seniorHigh,
+    undergraduate,
+    postgraduate,
+    email,
+  ];
+
+  db.run(query, params, function (err) {
+    if (err) {
+      console.error("Error updating profile:", err);
+      return res.status(500).json({ message: "Database error" });
+    }
+
+    if (this.changes === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({ message: "Profile updated successfully" });
+  });
+});
+
+
+
 // ============================================================================
 // SERVER START
 // ============================================================================
