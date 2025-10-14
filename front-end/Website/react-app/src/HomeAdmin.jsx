@@ -13,18 +13,32 @@ import SessionExpiredModal from "../SessionExpiredModal";
 const SidebarContent = ({ onClose, isMobile }) => {
   const { userData, sessionError } = useSessionCheck();
   const [profile, setProfile] = useState(null);
+  const [accessError, setAccessError] = useState(false); // ✅ Local flag for admin restriction
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (userData?.email) {
-      fetch(`http://localhost:5000/api/profile/${userData.email}`)
-        .then((res) => res.json())
-        .then((data) => setProfile(data))
-        .catch((err) => console.error("Error fetching profile:", err));
+    if (userData) {
+      // ✅ If user is not admin, show modal instead of directly redirecting
+      if (userData.role !== "admin") {
+        setAccessError(true);
+        setTimeout(() => navigate("/login"), 5000);
+        return; // stop here, don’t fetch profile
+      }
+
+      // ✅ Only fetch profile for valid admin users
+      if (userData.email) {
+        fetch(`http://localhost:5000/api/profile/${userData.email}`)
+          .then((res) => res.json())
+          .then((data) => setProfile(data))
+          .catch((err) => console.error("Error fetching profile:", err));
+      }
     }
   }, [userData]);
 
-  if (sessionError) return <SessionExpiredModal />;
+  // ✅ Handle both session and role errors
+  if (sessionError) return <SessionExpiredModal errorType="session" />;
+  if (accessError) return <SessionExpiredModal errorType="admin" />;
+
   if (!userData || !profile) return null;
 
   const isActive = (path) => location.pathname === path;
@@ -62,7 +76,6 @@ const SidebarContent = ({ onClose, isMobile }) => {
 
       {/* Profile info (NO PFP) */}
       <div className="flex flex-col items-center px-4 pb-6">
-        {/* Avatar Placeholder (Optional but not fetching image) */}
         <Avatar
           sx={{
             width: 100,
@@ -81,7 +94,7 @@ const SidebarContent = ({ onClose, isMobile }) => {
         </h4>
         <p className="text-xs text-[#272343]/70">{profile.email}</p>
         <Chip
-          label={"Administrator"}
+          label="Administrator"
           size="small"
           sx={{
             backgroundColor: "#272343",
@@ -174,11 +187,13 @@ const HomeAdmin = () => {
         anchor="left"
         open={open}
         onClose={() => setOpen(false)}
-        PaperProps={{
-          style: {
-            width: "280px",
-            backgroundColor: "transparent",
-            boxShadow: "none",
+        slotProps={{
+          paper: {
+            sx: {
+              width: "280px",
+              backgroundColor: "transparent",
+              boxShadow: "none",
+            },
           },
         }}
       >

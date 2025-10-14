@@ -4,10 +4,13 @@ import MenuIcon from "@mui/icons-material/Menu";
 import LogoutIcon from "@mui/icons-material/Logout";
 import CloseIcon from "@mui/icons-material/Close";
 import { Link, useLocation, useNavigate, Outlet } from "react-router-dom";
+import SessionExpiredModal from "../SessionExpiredModal";
+import { useSessionCheck } from "../useSessionCheck";
 
 const SidebarContent = ({ onClose, isMobile }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { sessionError } = useSessionCheck();
   
   const [userData, setUserData] = useState(null);
 
@@ -97,6 +100,8 @@ const SidebarContent = ({ onClose, isMobile }) => {
       )}
     </Link>
   );
+
+  if (sessionError) return <SessionExpiredModal  />;
 
   return (
     <div className="flex flex-col w-64 h-full bg-gradient-to-b from-[#BAE8E8] via-[#C8E9E9] to-[#D0EBEB] shadow-xl">
