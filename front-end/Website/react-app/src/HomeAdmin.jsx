@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Drawer, IconButton, Avatar, Chip } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import LogoutIcon from "@mui/icons-material/Logout";
@@ -6,19 +6,27 @@ import CloseIcon from "@mui/icons-material/Close";
 import PersonIcon from "@mui/icons-material/Person";
 import WorkOutlineOutlinedIcon from "@mui/icons-material/WorkOutlineOutlined";
 import AssignmentIcon from "@mui/icons-material/Assignment";
-import { NavLink, Outlet, useNavigate} from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useSessionCheck } from "../useSessionCheck";
 import SessionExpiredModal from "../SessionExpiredModal";
 
 const SidebarContent = ({ onClose, isMobile }) => {
   const { userData, sessionError } = useSessionCheck();
+  const [profile, setProfile] = useState(null);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (userData?.email) {
+      fetch(`http://localhost:5000/api/profile/${userData.email}`)
+        .then((res) => res.json())
+        .then((data) => setProfile(data))
+        .catch((err) => console.error("Error fetching profile:", err));
+    }
+  }, [userData]);
+
   if (sessionError) return <SessionExpiredModal />;
+  if (!userData || !profile) return null;
 
-  if (!userData) return null;
-
-  // Utility to check if the current path matches
   const isActive = (path) => location.pathname === path;
 
   const navItems = [
@@ -30,7 +38,7 @@ const SidebarContent = ({ onClose, isMobile }) => {
   const handleLogout = () => {
     alert("Admin logging out...");
     sessionStorage.removeItem("token");
-    navigate('/login');
+    navigate("/login");
   };
 
   return (
@@ -52,21 +60,28 @@ const SidebarContent = ({ onClose, isMobile }) => {
         </div>
       </div>
 
-      {/* Profile */}
+      {/* Profile info (NO PFP) */}
       <div className="flex flex-col items-center px-4 pb-6">
+        {/* Avatar Placeholder (Optional but not fetching image) */}
         <Avatar
-          src="https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?auto=format&fit=crop&w=634&q=80"
-          alt="Admin avatar"
           sx={{
             width: 100,
             height: 100,
-            border: "4px solid white",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+            bgcolor: "#272343",
+            color: "#FBDA23",
+            fontWeight: "bold",
+            fontSize: "1.5rem",
           }}
-        />
-        <h4 className="mt-3 text-lg font-bold text-[#272343]">Admin John Doe</h4>
+        >
+          {profile.firstname?.[0]?.toUpperCase() || "A"}
+        </Avatar>
+
+        <h4 className="mt-3 text-lg font-bold text-[#272343]">
+          {profile.firstname} {profile.lastname}
+        </h4>
+        <p className="text-xs text-[#272343]/70">{profile.email}</p>
         <Chip
-          label="Administrator"
+          label={"Administrator"}
           size="small"
           sx={{
             backgroundColor: "#272343",
@@ -170,9 +185,9 @@ const HomeAdmin = () => {
         <SidebarContent onClose={() => setOpen(false)} isMobile={true} />
       </Drawer>
 
-      {/* Main Content for nested routes */}
+      {/* Main Content */}
       <main className="flex-1 p-6 bg-gray-50 overflow-y-auto">
-        <Outlet /> {/* 👈 This is where ManageUser, JobListing, or Report renders */}
+        <Outlet />
       </main>
     </div>
   );
