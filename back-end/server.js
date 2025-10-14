@@ -193,30 +193,91 @@ app.get("/api/jobs", (req, res) => {
 })
 
 // ============================================================================
-// JOB UPDATE
+// JOB UPDATE 
 // ============================================================================
 app.put("/api/job/:job_id", (req, res) => {
   const { job_id } = req.params;
-  const { title, location, min_salary, max_salary, description, availability  } = req.body;
+  const { title, location, min_salary, max_salary, description, availability } = req.body;
+
+  if (!title || !location || !description) {
+    return res.status(400).json({ message: "Missing required fields" });
+  }
 
   const query = `
-    UPDATE job SET title = ?, location = ?, min_salary = ?, max_salary = ?, description = ?, availability = ? WHERE job_id = ?;
+    UPDATE job 
+    SET title = ?, location = ?, min_salary = ?, max_salary = ?, description = ?, availability = ?
+    WHERE job_id = ?;
   `;
 
-   const params = [title, location, min_salary, max_salary, description, availability, job_id];
+  const params = [title, location, min_salary, max_salary, description, availability, job_id];
+
   db.run(query, params, function (err) {
     if (err) {
       console.error("Error updating job:", err);
-      return res.status(500).json({ message: "Database erro"});
+      return res.status(500).json({ message: "Database error" });
     }
 
     if (this.changes === 0) {
-      return res.status(404).json({ message: "Job nor found"});
+      return res.status(404).json({ message: "Job not found" });
     }
 
-    res.json({ message: "Job updated successfully"})
-  })
-})
+    res.json({ message: "Job updated successfully" });
+  });
+});
+
+// ============================================================================
+// JOB DELETE
+// ============================================================================
+app.delete("/api/job/:job_id", (req, res) => {
+  const { job_id } = req.params;
+
+  const query = `DELETE FROM job WHERE job_id = ?;`;
+
+  db.run(query, [job_id], function (err) {
+    if (err) {
+      console.error("Error deleting job:", err);
+      return res.status(500).json({ message: "Database error" });
+    }
+
+    if (this.changes === 0) {
+      return res.status(404).json({ message: "Job not found" });
+    }
+
+    res.json({ message: "Job deleted successfully" });
+  });
+});
+
+// ============================================================================
+// JOB ADD
+// ============================================================================
+app.post("/api/job", (req, res) => {
+  const { title, location, min_salary, max_salary, description, availability } = req.body;
+
+  if (!title || !location || !description || !min_salary || !max_salary || !availability) {
+    return res.status(400).json({ message: "All fields are required." });
+  }
+
+  const query = `
+    INSERT INTO job (title, location, min_salary, max_salary, description, availability)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `;
+
+  const params = [title, location, min_salary, max_salary, description, availability];
+
+  db.run(query, params, function (err) {
+    if (err) {
+      console.error("Error inserting job:", err);
+      return res.status(500).json({ message: "Database error while adding job." });
+    }
+
+    res.json({
+      message: "Job added successfully.",
+      job_id: this.lastID, // Return the new job ID
+    });
+  });
+});
+
+
 
 // ============================================================================
 // FETCH PROFILE
