@@ -265,31 +265,56 @@ const handleEditInputChange = (e) => {
   };
 
   // Save edited job (all values already in lowercase)
-  const saveEditedJob = () => {
-    if (!validateEditForm()) {
-      return;
-    }
+  const saveEditedJob = async () => {
+  if (!validateEditForm()) return;
 
-    try {
-      const updatedJob = {
-        ...editingJob,
+  try {
+    const response = await fetch(`http://localhost:5000/api/job/${editingJob.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        title: editingJob.title,
+        location: editingJob.location,
         min_salary: parseInt(editingJob.min_salary),
         max_salary: parseInt(editingJob.max_salary),
-        action: "Edit"
-      };
-      
-      setJobs(jobs.map(job => job.id === editingJob.id ? updatedJob : job));
-      setSuccessMessage("Job updated successfully!");
-      
-      // Auto-close modal after success
-      setTimeout(() => {
-        closeEditModal();
-      }, 1500);
-      
-    } catch (error) {
-      setErrors({ general: "Failed to update job. Please try again." });
+        description: editingJob.description,
+        availability: parseInt(editingJob.availability),
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to update job");
     }
-  };
+
+    // Update frontend list after successful backend update
+    setJobs((prevJobs) =>
+      prevJobs.map((job) =>
+        job.id === editingJob.id
+          ? {
+              ...job,
+              title: editingJob.title,
+              location: editingJob.location,
+              description: editingJob.description,
+              min_salary: parseInt(editingJob.min_salary),
+              max_salary: parseInt(editingJob.max_salary),
+              availability: parseInt(editingJob.availability),
+            }
+          : job
+      )
+    );
+
+    setSuccessMessage("✅ Job updated successfully!");
+    setTimeout(() => closeEditModal(), 1500);
+  } catch (error) {
+    console.error("Error updating job:", error);
+    setErrors({ general: "Failed to update job. Please try again." });
+  }
+};
+
 
   const handleActionChange = (jobId, newAction) => {
     try {
