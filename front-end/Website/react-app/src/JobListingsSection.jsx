@@ -11,6 +11,12 @@ import {
   Tabs,
   Tab,
   Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Divider,
+  Typography,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
@@ -21,6 +27,8 @@ import BookmarkIcon from '@mui/icons-material/Bookmark';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import BusinessIcon from '@mui/icons-material/Business';
 import Groups2Icon from '@mui/icons-material/Groups2';
+import CloseIcon from '@mui/icons-material/Close';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 
 const JobListingsSection = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,6 +36,16 @@ const JobListingsSection = () => {
   const [jobType, setJobType] = useState('all');
   const [tabValue, setTabValue] = useState(0);
   const [savedJobs, setSavedJobs] = useState([]);
+  const [applyModalOpen, setApplyModalOpen] = useState(false);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [applicationData, setApplicationData] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    coverLetter: '',
+    resume: null,
+  });
 
   // Sample job data
   const jobs = [
@@ -125,6 +143,44 @@ const JobListingsSection = () => {
     );
   };
 
+  const handleApplyClick = (job) => {
+    setSelectedJob(job);
+    setApplyModalOpen(true);
+  };
+
+  const handleDetailsClick = (job) => {
+    setSelectedJob(job);
+    setDetailsModalOpen(true);
+  };
+
+  const handleCloseApplyModal = () => {
+    setApplyModalOpen(false);
+    setApplicationData({
+      fullName: '',
+      email: '',
+      phone: '',
+      coverLetter: '',
+      resume: null,
+    });
+  };
+
+  const handleCloseDetailsModal = () => {
+    setDetailsModalOpen(false);
+  };
+
+  const handleApplicationSubmit = () => {
+    console.log('Application submitted:', applicationData);
+    alert('Application submitted successfully!');
+    handleCloseApplyModal();
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setApplicationData(prev => ({ ...prev, resume: file }));
+    }
+  };
+
   const filteredJobs = jobs.filter(job => {
     const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          job.company.toLowerCase().includes(searchTerm.toLowerCase());
@@ -199,6 +255,7 @@ const JobListingsSection = () => {
         <div className="flex gap-2 items-center">   
           <Button
             variant="contained"
+            onClick={() => handleApplyClick(job)}
             sx={{
               backgroundColor: '#FBDA23',
               color: '#272343',
@@ -212,6 +269,7 @@ const JobListingsSection = () => {
           </Button>
           <Button
             variant="outlined"
+            onClick={() => handleDetailsClick(job)}
             sx={{
               borderColor: '#272343',
               color: '#272343',
@@ -352,6 +410,289 @@ const JobListingsSection = () => {
           </Card>
         )}
       </div>
+
+      {/* Apply Modal */}
+      <Dialog 
+        open={applyModalOpen} 
+        onClose={handleCloseApplyModal}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ backgroundColor: '#BAE8E8', color: '#272343', fontWeight: 'bold' }}>
+          <div className="flex justify-between items-center">
+            <span>Apply for {selectedJob?.title}</span>
+            <IconButton onClick={handleCloseApplyModal}>
+              <CloseIcon />
+            </IconButton>
+          </div>
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            {selectedJob?.company} • {selectedJob?.location}
+          </Typography>
+          
+          <TextField
+            fullWidth
+            label="Full Name"
+            value={applicationData.fullName}
+            onChange={(e) => setApplicationData(prev => ({ ...prev, fullName: e.target.value }))}
+            sx={{ mb: 2 }}
+            required
+          />
+          
+          <TextField
+            fullWidth
+            label="Email Address"
+            type="email"
+            value={applicationData.email}
+            onChange={(e) => setApplicationData(prev => ({ ...prev, email: e.target.value }))}
+            sx={{ mb: 2 }}
+            required
+          />
+          
+          <TextField
+            fullWidth
+            label="Phone Number"
+            value={applicationData.phone}
+            onChange={(e) => setApplicationData(prev => ({ ...prev, phone: e.target.value }))}
+            sx={{ mb: 2 }}
+            required
+          />
+          
+          <TextField
+            fullWidth
+            label="Cover Letter"
+            multiline
+            rows={4}
+            value={applicationData.coverLetter}
+            onChange={(e) => setApplicationData(prev => ({ ...prev, coverLetter: e.target.value }))}
+            placeholder="Tell us why you're a great fit for this role..."
+            sx={{ mb: 2 }}
+          />
+          
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center mb-2">
+            <input
+              type="file"
+              id="resume-upload"
+              accept=".pdf,.doc,.docx"
+              onChange={handleFileChange}
+              style={{ display: 'none' }}
+            />
+            <label htmlFor="resume-upload">
+              <Button
+                variant="outlined"
+                component="span"
+                startIcon={<UploadFileIcon />}
+                sx={{
+                  borderColor: '#272343',
+                  color: '#272343',
+                  '&:hover': {
+                    borderColor: '#FBDA23',
+                    backgroundColor: '#FBDA23',
+                  },
+                }}
+              >
+                Upload Resume
+              </Button>
+            </label>
+            {applicationData.resume && (
+              <Typography variant="body2" sx={{ mt: 2, color: '#2ECC71', fontWeight: 'bold' }}>
+                ✓ {applicationData.resume.name}
+              </Typography>
+            )}
+            <Typography variant="caption" display="block" sx={{ mt: 1, color: 'text.secondary' }}>
+              Supported formats: PDF, DOC, DOCX (Max 5MB)
+            </Typography>
+          </div>
+        </DialogContent>
+        <DialogActions sx={{ p: 3 }}>
+          <Button 
+            onClick={handleCloseApplyModal}
+            sx={{
+              color: '#272343',
+              fontWeight: 'bold',
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleApplicationSubmit}
+            variant="contained"
+            disabled={!applicationData.fullName || !applicationData.email || !applicationData.phone}
+            sx={{
+              backgroundColor: '#FBDA23',
+              color: '#272343',
+              fontWeight: 'bold',
+              '&:hover': {
+                backgroundColor: '#FFE55C',
+              },
+            }}
+          >
+            Submit Application
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Job Details Modal */}
+      <Dialog 
+        open={detailsModalOpen} 
+        onClose={handleCloseDetailsModal}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ backgroundColor: '#BAE8E8', color: '#272343', fontWeight: 'bold' }}>
+          <div className="flex justify-between items-center">
+            <span>Job Details</span>
+            <IconButton onClick={handleCloseDetailsModal}>
+              <CloseIcon />
+            </IconButton>
+          </div>
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          {selectedJob && (
+            <>
+              <div className="flex gap-4 mb-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-[#BAE8E8] to-[#FBDA23] rounded-lg flex items-center justify-center flex-shrink-0">
+                  <BusinessIcon sx={{ color: '#272343', fontSize: 35 }} />
+                </div>
+                <div>
+                  <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#272343', mb: 1 }}>
+                    {selectedJob.title}
+                  </Typography>
+                  <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 'bold' }}>
+                    {selectedJob.company}
+                  </Typography>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2 mb-4">
+                {selectedJob.tags.map(tag => (
+                  <Chip 
+                    key={tag} 
+                    label={tag} 
+                    sx={{
+                      backgroundColor: '#BAE8E8',
+                      color: '#272343',
+                      fontWeight: 'bold',
+                    }}
+                  />
+                ))}
+              </div>
+
+              <Divider sx={{ my: 3 }} />
+
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="flex items-center gap-2">
+                  <LocationOnIcon sx={{ color: '#FBDA23' }} />
+                  <div>
+                    <Typography variant="caption" color="text.secondary">Location</Typography>
+                    <Typography variant="body2" fontWeight="bold">{selectedJob.location}</Typography>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <WorkIcon sx={{ color: '#FBDA23' }} />
+                  <div>
+                    <Typography variant="caption" color="text.secondary">Job Type</Typography>
+                    <Typography variant="body2" fontWeight="bold">{selectedJob.type}</Typography>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <AttachMoneyIcon sx={{ color: '#FBDA23' }} />
+                  <div>
+                    <Typography variant="caption" color="text.secondary">Salary Range</Typography>
+                    <Typography variant="body2" fontWeight="bold">{selectedJob.salary}</Typography>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <AccessTimeIcon sx={{ color: '#FBDA23' }} />
+                  <div>
+                    <Typography variant="caption" color="text.secondary">Posted</Typography>
+                    <Typography variant="body2" fontWeight="bold">{selectedJob.posted}</Typography>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Groups2Icon sx={{ color: '#FBDA23' }} />
+                  <div>
+                    <Typography variant="caption" color="text.secondary">Vacancies</Typography>
+                    <Typography variant="body2" fontWeight="bold">{selectedJob.vacantleft}</Typography>
+                  </div>
+                </div>
+                {selectedJob.remote && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 bg-[#2ECC71] rounded-full" />
+                    <div>
+                      <Typography variant="caption" color="text.secondary">Work Setup</Typography>
+                      <Typography variant="body2" fontWeight="bold" color="#2ECC71">Remote Available</Typography>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <Divider sx={{ my: 3 }} />
+
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#272343', mb: 2 }}>
+                Job Description
+              </Typography>
+              <Typography variant="body1" sx={{ mb: 3, lineHeight: 1.8 }}>
+                {selectedJob.description}
+              </Typography>
+
+              <Typography variant="body1" sx={{ mb: 2, lineHeight: 1.8 }}>
+                We are seeking a talented professional to join our dynamic team. The ideal candidate will have:
+              </Typography>
+              <ul className="list-disc list-inside mb-4 space-y-1">
+                <li>Strong experience in relevant technologies</li>
+                <li>Excellent problem-solving and communication skills</li>
+                <li>Ability to work collaboratively in a team environment</li>
+                <li>Passion for continuous learning and professional development</li>
+              </ul>
+
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#272343', mb: 2 }}>
+                Benefits
+              </Typography>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Competitive salary package</li>
+                <li>Health insurance coverage</li>
+                <li>Professional development opportunities</li>
+                <li>Flexible work arrangements</li>
+                <li>Collaborative team culture</li>
+              </ul>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 3 }}>
+          <Button
+            onClick={() => {
+              handleCloseDetailsModal();
+              toggleSaveJob(selectedJob.id);
+            }}
+            startIcon={savedJobs.includes(selectedJob?.id) ? <BookmarkIcon /> : <BookmarkBorderIcon />}
+            sx={{
+              color: '#272343',
+              fontWeight: 'bold',
+            }}
+          >
+            {savedJobs.includes(selectedJob?.id) ? 'Saved' : 'Save Job'}
+          </Button>
+          <Button
+            onClick={() => {
+              handleCloseDetailsModal();
+              handleApplyClick(selectedJob);
+            }}
+            variant="contained"
+            sx={{
+              backgroundColor: '#FBDA23',
+              color: '#272343',
+              fontWeight: 'bold',
+              '&:hover': {
+                backgroundColor: '#FFE55C',
+              },
+            }}
+          >
+            Apply Now
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 };

@@ -347,10 +347,10 @@ const handleEditInputChange = (e) => {
     }
   };
 
+  // Job Delete
   const deleteJob = async (jobId) => {
   if (window.confirm("Are you sure you want to delete this job listing?")) {
     try {
-      // Send DELETE request to backend
       const response = await fetch(`http://localhost:5000/api/job/${jobId}`, {
         method: "DELETE",
       });
@@ -361,11 +361,10 @@ const handleEditInputChange = (e) => {
         throw new Error(data.message || "Failed to delete job.");
       }
 
-      // Remove job from UI after successful deletion
-      setJobs((prevJobs) => prevJobs.filter((job) => job.job_id !== jobId));
-      setSuccessMessage("Job deleted successfully!");
+      // ✅ Use job.id (not job.job_id)
+      setJobs((prevJobs) => prevJobs.filter((job) => job.id !== jobId));
 
-      // Clear success message after 3 seconds
+      setSuccessMessage("✅ Job deleted successfully!");
       setTimeout(() => setSuccessMessage(""), 3000);
     } catch (error) {
       console.error("Error deleting job:", error);
@@ -373,6 +372,7 @@ const handleEditInputChange = (e) => {
     }
   }
 };
+
 
 
   const handleOverlayClick = (e) => {

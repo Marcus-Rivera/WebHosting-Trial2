@@ -52,7 +52,7 @@ app.post("/api/login", async (req, res) => {
 
 
     // Create JWT (expires in 1 hour) 
-    const token = jwt.sign({ id: user.user_id, email: user.email }, SECRET_KEY, 
+    const token = jwt.sign({ id: user.user_id, email: user.email, role: user.role }, SECRET_KEY, 
       {expiresIn: "1h",});
 
      // Successful authentication → send user info (but omit sensitive data)
