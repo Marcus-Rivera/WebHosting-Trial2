@@ -237,54 +237,32 @@ const handleEditInputChange = (e) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const saveNewJob = async () => {
-  if (!validateForm()) return;
-
-  try {
-    const response = await fetch("http://localhost:5000/api/job", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        title: newJob.title,
-        location: newJob.location,
-        description: newJob.description,
-        min_salary: parseInt(newJob.min_salary),
-        max_salary: parseInt(newJob.max_salary),
-        availability: parseInt(newJob.availability),
-      }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || "Failed to add job");
+  const saveNewJob = () => {
+    if (!validateForm()) {
+      return;
     }
 
-    // Add the new job to frontend list
-    setJobs((prevJobs) => [
-      ...prevJobs,
-      {
-        id: data.job_id, // returned from backend
-        title: newJob.title,
-        location: newJob.location,
-        description: newJob.description,
+    try {
+      const jobToAdd = {
+        id: Date.now(),
+        ...newJob,
         min_salary: parseInt(newJob.min_salary),
         max_salary: parseInt(newJob.max_salary),
-        availability: parseInt(newJob.availability),
-        action: "Edit",
-      },
-    ]);
-
-    setSuccessMessage("✅ Job added successfully!");
-    setTimeout(() => closeAddModal(), 1500);
-  } catch (error) {
-    console.error("Error adding job:", error);
-    setErrors({ general: "Failed to add job. Please try again." });
-  }
-};
-
+        action: "Edit"
+      };
+      
+      setJobs(prevJobs => [...prevJobs, jobToAdd]);
+      setSuccessMessage("Job added successfully!");
+      
+      // Auto-close modal after success
+      setTimeout(() => {
+        closeAddModal();
+      }, 1500);
+      
+    } catch (error) {
+      setErrors({ general: "Failed to add job. Please try again." });
+    }
+  };
 
   // Save edited job (all values already in lowercase)
   const saveEditedJob = async () => {
@@ -337,6 +315,7 @@ const handleEditInputChange = (e) => {
   }
 };
 
+
   const handleActionChange = (jobId, newAction) => {
     try {
       setJobs(jobs.map(job => 
@@ -347,33 +326,19 @@ const handleEditInputChange = (e) => {
     }
   };
 
-  // Job Delete
-  const deleteJob = async (jobId) => {
-  if (window.confirm("Are you sure you want to delete this job listing?")) {
-    try {
-      const response = await fetch(`http://localhost:5000/api/job/${jobId}`, {
-        method: "DELETE",
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to delete job.");
+  const deleteJob = (jobId) => {
+    if (window.confirm("Are you sure you want to delete this job listing?")) {
+      try {
+        setJobs(jobs.filter(job => job.id !== jobId));
+        setSuccessMessage("Job deleted successfully!");
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => setSuccessMessage(""), 3000);
+      } catch (error) {
+        setErrors({ general: "Failed to delete job. Please try again." });
       }
-
-      // ✅ Use job.id (not job.job_id)
-      setJobs((prevJobs) => prevJobs.filter((job) => job.id !== jobId));
-
-      setSuccessMessage("✅ Job deleted successfully!");
-      setTimeout(() => setSuccessMessage(""), 3000);
-    } catch (error) {
-      console.error("Error deleting job:", error);
-      setErrors({ general: "Failed to delete job. Please try again." });
     }
-  }
-};
-
-
+  };
 
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) {
@@ -829,4 +794,4 @@ const handleEditInputChange = (e) => {
   );
 };
 
-export default JobListing;
+export default JobListing
