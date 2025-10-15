@@ -86,6 +86,12 @@ const ProfileSection = () => {
       if (res.ok) {
         setAlertType("success");
         setAlertMsg("Profile updated successfully!");
+        const updatedUser = {
+        ...formData,
+        email: userData.email,
+        };
+        sessionStorage.setItem("userData", JSON.stringify(updatedUser));
+        window.dispatchEvent(new Event("userDataUpdated"));
         setOriginalData(formData);
         setIsEditing(false);
       } else {
