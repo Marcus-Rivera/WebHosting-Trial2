@@ -8,6 +8,8 @@ const ManageUser = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Status");
   const [successMessage, setSuccessMessage] = useState("");
+  const [savedUsers, setSavedUsers] = useState([]);
+  const [activeTab, setActiveTab] = useState("all"); // "all" or "saved"
 
   // Fetch users from backend database
   useEffect(() => {
@@ -19,8 +21,19 @@ const ManageUser = () => {
           throw new Error("Failed to fetch users");
         }
         const data = await response.json();
-        setUsers(data);
-        setFilteredUsers(data);
+        
+        // Load saved users from localStorage
+        const saved = JSON.parse(localStorage.getItem('savedUsers') || '[]');
+        setSavedUsers(saved);
+
+        // Add isSaved property to users
+        const usersWithSavedStatus = data.map(user => ({
+          ...user,
+          isSaved: saved.some(savedUser => savedUser.user_id === user.user_id)
+        }));
+
+        setUsers(usersWithSavedStatus);
+        setFilteredUsers(usersWithSavedStatus);
       } catch (err) {
         console.error("Error fetching users:", err);
         setError("Failed to load users. Please try again later.");
@@ -32,9 +45,14 @@ const ManageUser = () => {
     fetchUsers();
   }, []);
 
-  // Filter users based on search and filters
+  // Filter users based on search, filters, and active tab
   useEffect(() => {
     let filtered = users;
+
+    // Tab filter
+    if (activeTab === "saved") {
+      filtered = filtered.filter(user => user.isSaved);
+    }
 
     // Search filter
     if (searchTerm) {
@@ -50,7 +68,48 @@ const ManageUser = () => {
     }
 
     setFilteredUsers(filtered);
-  }, [searchTerm, statusFilter, users]);
+  }, [searchTerm, statusFilter, users, activeTab]);
+
+  // Toggle save user
+  const toggleSaveUser = (userId) => {
+    const user = users.find(u => u.user_id === userId);
+    if (!user) return;
+
+    let updatedSavedUsers;
+    const isCurrentlySaved = savedUsers.some(savedUser => savedUser.user_id === userId);
+
+    if (isCurrentlySaved) {
+      updatedSavedUsers = savedUsers.filter(savedUser => savedUser.user_id !== userId);
+    } else {
+      updatedSavedUsers = [...savedUsers, user];
+    }
+
+    setSavedUsers(updatedSavedUsers);
+    localStorage.setItem('savedUsers', JSON.stringify(updatedSavedUsers));
+
+    // Update users with saved status
+    const updatedUsers = users.map(user =>
+      user.user_id === userId
+        ? { ...user, isSaved: !isCurrentlySaved }
+        : user
+    );
+    
+    setUsers(updatedUsers);
+    
+    // Update filtered users based on current tab
+    if (activeTab === "saved" && isCurrentlySaved) {
+      // If unsaving from saved tab, remove from filtered view
+      setFilteredUsers(prev => prev.filter(user => user.user_id !== userId));
+    } else {
+      setFilteredUsers(updatedUsers.filter(user => {
+        if (activeTab === "saved") return user.isSaved;
+        return true;
+      }));
+    }
+
+    setSuccessMessage(isCurrentlySaved ? "User removed from saved!" : "User saved successfully!");
+    setTimeout(() => setSuccessMessage(""), 3000);
+  };
 
   // Handle action change
   const handleActionChange = (userId, newAction) => {
@@ -77,8 +136,6 @@ const ManageUser = () => {
         )
       );
       setSuccessMessage("User status updated successfully!");
-      
-      // Clear success message after 3 seconds
       setTimeout(() => setSuccessMessage(""), 3000);
     })
     .catch((err) => {
@@ -91,6 +148,11 @@ const ManageUser = () => {
   const clearFilters = () => {
     setSearchTerm("");
     setStatusFilter("All Status");
+  };
+
+  // Switch between All Users and Saved Users tabs
+  const switchTab = (tab) => {
+    setActiveTab(tab);
   };
 
   if (loading) {
@@ -159,6 +221,7 @@ const ManageUser = () => {
         <div className="flex justify-between items-center">
           <div className="text-gray-600">
             {filteredUsers.length} user{filteredUsers.length !== 1 ? 's' : ''} found
+            {activeTab === "saved" && " in saved users"}
           </div>
           <button
             onClick={clearFilters}
@@ -169,11 +232,35 @@ const ManageUser = () => {
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="flex border-b border-gray-200 mb-6">
+        <button 
+          onClick={() => switchTab("all")}
+          className={`px-4 py-2 font-medium ${
+            activeTab === "all" 
+              ? 'text-blue-600 border-b-2 border-blue-600' 
+              : 'text-gray-500 hover:text-blue-600'
+          }`}
+        >
+          ALL USERS
+        </button>
+        <button 
+          onClick={() => switchTab("saved")}
+          className={`px-4 py-2 font-medium ${
+            activeTab === "saved" 
+              ? 'text-blue-600 border-b-2 border-blue-600' 
+              : 'text-gray-500 hover:text-blue-600'
+          }`}
+        >
+          SAVED USERS ({savedUsers.length})
+        </button>
+      </div>
+
       {/* User Cards - Mobile View */}
       <div className="block sm:hidden space-y-4">
         {filteredUsers.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            No users found
+            {activeTab === "saved" ? "No saved users found" : "No users found"}
           </div>
         ) : (
           filteredUsers.map((user) => (
@@ -184,17 +271,31 @@ const ManageUser = () => {
                     <h3 className="text-lg font-semibold text-gray-900">{user.username}</h3>
                     <p className="text-sm text-gray-600">{user.email}</p>
                   </div>
-                  <span
-                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      user.status === "Approved"
-                        ? "bg-green-100 text-green-800"
-                        : user.status === "Suspended"
-                        ? "bg-red-100 text-red-800"
-                        : "bg-yellow-100 text-yellow-800"
-                    }`}
-                  >
-                    {user.status}
-                  </span>
+                  <div className="flex items-center space-x-2">
+                    <span
+                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        user.status === "Approved"
+                          ? "bg-green-100 text-green-800"
+                          : user.status === "Suspended"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-yellow-100 text-yellow-800"
+                      }`}
+                    >
+                      {user.status}
+                    </span>
+                    <button 
+                      onClick={() => toggleSaveUser(user.user_id)}
+                      className={`p-2 rounded-full transition-colors ${
+                        user.isSaved 
+                          ? 'text-yellow-500 bg-yellow-50' 
+                          : 'text-gray-400 hover:text-yellow-500 hover:bg-gray-50'
+                      }`}
+                    >
+                      <svg className="w-5 h-5" fill={user.isSaved ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex justify-between items-center">
@@ -223,13 +324,14 @@ const ManageUser = () => {
               <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
               <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
               <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              <th className="px-4 py-3 lg:px-6 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Save</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredUsers.length === 0 ? (
               <tr>
-                <td colSpan="4" className="px-4 py-8 text-center text-gray-500">
-                  No users found
+                <td colSpan="5" className="px-4 py-8 text-center text-gray-500">
+                  {activeTab === "saved" ? "No saved users found" : "No users found"}
                 </td>
               </tr>
             ) : (
@@ -264,6 +366,23 @@ const ManageUser = () => {
                       <option value="Suspended">Suspended</option>
                       <option value="Pending">Pending</option>
                     </select>
+                  </td>
+                  <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm text-gray-500">
+                    <div className="flex justify-center">
+                      <button 
+                        onClick={() => toggleSaveUser(user.user_id)}
+                        className={`p-2 rounded-full transition-colors ${
+                          user.isSaved 
+                            ? 'text-yellow-500 bg-yellow-50' 
+                            : 'text-gray-400 hover:text-yellow-500 hover:bg-gray-50'
+                        }`}
+                        title={user.isSaved ? 'Remove from saved' : 'Save user'}
+                      >
+                        <svg className="w-5 h-5" fill={user.isSaved ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                        </svg>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
