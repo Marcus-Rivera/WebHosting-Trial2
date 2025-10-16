@@ -2,27 +2,43 @@ import React, { useState, useEffect } from "react";
 
 const JobListing = () => {
   const [jobs, setJobs] = useState([]);
+  const [filteredJobs, setFilteredJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [locationFilter, setLocationFilter] = useState("");
+  const [jobTypeFilter, setJobTypeFilter] = useState("All Types");
+  const [savedJobs, setSavedJobs] = useState([]);
+  
   const [newJob, setNewJob] = useState({
     title: "",
+    company: "",
     location: "",
+    job_type: "Full-time",
+    skills: "",
     description: "",
     min_salary: "",
     max_salary: "",
     availability: 1
   });
+
   const [editingJob, setEditingJob] = useState({
     id: "",
     title: "",
+    company: "",
     location: "",
+    job_type: "Full-time",
+    skills: "",
     description: "",
     min_salary: "",
     max_salary: "",
     availability: 1
   });
+
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -40,15 +56,24 @@ const JobListing = () => {
         const formattedJobs = data.map((job) => ({
           id: job.job_id,
           title: job.title,
+          company: job.company || "Tech Solutions Inc.",
           location: job.location,
+          job_type: job.job_type || "Full-time",
+          skills: job.skills ? job.skills.split(',') : ["React", "TypeScript", "Tailwind CSS"],
           description: job.description,
           min_salary: job.min_salary,
           max_salary: job.max_salary,
           availability: job.availability,
-          action: "Edit" 
+          posted_date: job.posted_date || "2 days ago",
+          isSaved: false
         }));
 
         setJobs(formattedJobs);
+        setFilteredJobs(formattedJobs);
+        
+        // Load saved jobs from localStorage
+        const saved = JSON.parse(localStorage.getItem('savedJobs') || '[]');
+        setSavedJobs(saved);
       } catch (err) {
         console.error("Error fetching jobs:", err);
         setError("Failed to load job listings. Please try again later.");
@@ -60,11 +85,73 @@ const JobListing = () => {
     fetchJobs();
   }, []);
 
+  // Filter jobs based on search and filters
+  useEffect(() => {
+    let filtered = jobs;
+
+    // Search filter
+    if (searchTerm) {
+      filtered = filtered.filter(job =>
+        job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        job.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+
+    // Location filter
+    if (locationFilter) {
+      filtered = filtered.filter(job =>
+        job.location.toLowerCase().includes(locationFilter.toLowerCase())
+      );
+    }
+
+    // Job type filter
+    if (jobTypeFilter !== "All Types") {
+      filtered = filtered.filter(job => job.job_type === jobTypeFilter);
+    }
+
+    setFilteredJobs(filtered);
+  }, [searchTerm, locationFilter, jobTypeFilter, jobs]);
+
   // Helper formatters
   const formatSalary = (min, max) =>
     `₱${min.toLocaleString()} - ₱${max.toLocaleString()}`;
 
   const formatAvailability = (a) => parseInt(a, 10);
+
+  // Toggle save job
+  const toggleSaveJob = (jobId) => {
+    const job = jobs.find(j => j.id === jobId);
+    if (!job) return;
+
+    let updatedSavedJobs;
+    const isCurrentlySaved = savedJobs.some(savedJob => savedJob.id === jobId);
+
+    if (isCurrentlySaved) {
+      updatedSavedJobs = savedJobs.filter(savedJob => savedJob.id !== jobId);
+    } else {
+      updatedSavedJobs = [...savedJobs, job];
+    }
+
+    setSavedJobs(updatedSavedJobs);
+    localStorage.setItem('savedJobs', JSON.stringify(updatedSavedJobs));
+
+    // Update jobs with saved status
+    setJobs(prevJobs =>
+      prevJobs.map(job =>
+        job.id === jobId
+          ? { ...job, isSaved: !isCurrentlySaved }
+          : job
+      )
+    );
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSearchTerm("");
+    setLocationFilter("");
+    setJobTypeFilter("All Types");
+  };
 
   if (loading) {
     return (
@@ -86,18 +173,43 @@ const JobListing = () => {
 
   const closeAddModal = () => {
     setShowAddModal(false);
-    setNewJob({ title: "", location: "", description: "", min_salary: "", max_salary: "", availability: 1 });
+    setNewJob({ 
+      title: "", 
+      company: "",
+      location: "", 
+      job_type: "Full-time",
+      skills: "",
+      description: "", 
+      min_salary: "", 
+      max_salary: "", 
+      availability: 1 
+    });
     setErrors({});
     setSuccessMessage("");
   };
 
-  // Open edit modal and populate with job data (convert to lowercase)
+  // Open view modal
+  const openViewModal = (job) => {
+    setSelectedJob(job);
+    setShowViewModal(true);
+  };
+
+  // Close view modal
+  const closeViewModal = () => {
+    setShowViewModal(false);
+    setSelectedJob(null);
+  };
+
+  // Open edit modal and populate with job data
   const openEditModal = (job) => {
     setEditingJob({
       id: job.id,
-      title: job.title.toLowerCase(),        // Convert to lowercase
-      location: job.location.toLowerCase(),  // Convert to lowercase
-      description: job.description.toLowerCase(), // Convert to lowercase
+      title: job.title,
+      company: job.company,
+      location: job.location,
+      job_type: job.job_type,
+      skills: Array.isArray(job.skills) ? job.skills.join(', ') : job.skills,
+      description: job.description,
       min_salary: job.min_salary.toString(),
       max_salary: job.max_salary.toString(),
       availability: job.availability
@@ -113,7 +225,10 @@ const JobListing = () => {
     setEditingJob({
       id: "",
       title: "",
+      company: "",
       location: "",
+      job_type: "Full-time",
+      skills: "",
       description: "",
       min_salary: "",
       max_salary: "",
@@ -138,21 +253,21 @@ const JobListing = () => {
   };
 
   // Handle edit form input changes
-const handleEditInputChange = (e) => {
-  const { name, value } = e.target;
-  
-  // Only allow numbers for salary fields
-  if ((name === 'min_salary' || name === 'max_salary') && value !== '' && !/^\d+$/.test(value)) {
-    return;
-  }
-  
-  setEditingJob(prev => ({ ...prev, [name]: value }));
-  
-  // Clear error when user starts typing
-  if (errors[name]) {
-    setErrors(prev => ({ ...prev, [name]: "" }));
-  }
-};
+  const handleEditInputChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Only allow numbers for salary fields
+    if ((name === 'min_salary' || name === 'max_salary') && value !== '' && !/^\d+$/.test(value)) {
+      return;
+    }
+    
+    setEditingJob(prev => ({ ...prev, [name]: value }));
+    
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: "" }));
+    }
+  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -163,8 +278,16 @@ const handleEditInputChange = (e) => {
       newErrors.title = "Job title must be at least 3 characters";
     }
 
+    if (!newJob.company.trim()) {
+      newErrors.company = "Company name is required";
+    }
+
     if (!newJob.location.trim()) {
       newErrors.location = "Location is required";
+    }
+
+    if (!newJob.skills.trim()) {
+      newErrors.skills = "Skills are required";
     }
 
     if (!newJob.description.trim()) {
@@ -205,8 +328,16 @@ const handleEditInputChange = (e) => {
       newErrors.title = "Job title must be at least 3 characters";
     }
 
+    if (!editingJob.company.trim()) {
+      newErrors.company = "Company name is required";
+    }
+
     if (!editingJob.location.trim()) {
       newErrors.location = "Location is required";
+    }
+
+    if (!editingJob.skills.trim()) {
+      newErrors.skills = "Skills are required";
     }
 
     if (!editingJob.description.trim()) {
@@ -246,12 +377,15 @@ const handleEditInputChange = (e) => {
       const jobToAdd = {
         id: Date.now(),
         ...newJob,
+        skills: newJob.skills.split(',').map(skill => skill.trim()),
         min_salary: parseInt(newJob.min_salary),
         max_salary: parseInt(newJob.max_salary),
-        action: "Edit"
+        posted_date: "Just now",
+        isSaved: false
       };
       
       setJobs(prevJobs => [...prevJobs, jobToAdd]);
+      setFilteredJobs(prevJobs => [...prevJobs, jobToAdd]);
       setSuccessMessage("Job added successfully!");
       
       // Auto-close modal after success
@@ -264,57 +398,31 @@ const handleEditInputChange = (e) => {
     }
   };
 
-  // Save edited job (all values already in lowercase)
+  // Save edited job
   const saveEditedJob = async () => {
-  if (!validateEditForm()) return;
+    if (!validateEditForm()) return;
 
-  try {
-    const response = await fetch(`http://localhost:5000/api/job/${editingJob.id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        title: editingJob.title,
-        location: editingJob.location,
+    try {
+      const updatedJob = {
+        ...editingJob,
+        skills: editingJob.skills.split(',').map(skill => skill.trim()),
         min_salary: parseInt(editingJob.min_salary),
         max_salary: parseInt(editingJob.max_salary),
-        description: editingJob.description,
-        availability: parseInt(editingJob.availability),
-      }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || "Failed to update job");
+      };
+      
+      setJobs(jobs.map(job => job.id === editingJob.id ? { ...job, ...updatedJob } : job));
+      setFilteredJobs(filteredJobs.map(job => job.id === editingJob.id ? { ...job, ...updatedJob } : job));
+      setSuccessMessage("Job updated successfully!");
+      
+      // Auto-close modal after success
+      setTimeout(() => {
+        closeEditModal();
+      }, 1500);
+      
+    } catch (error) {
+      setErrors({ general: "Failed to update job. Please try again." });
     }
-
-    // Update frontend list after successful backend update
-    setJobs((prevJobs) =>
-      prevJobs.map((job) =>
-        job.id === editingJob.id
-          ? {
-              ...job,
-              title: editingJob.title,
-              location: editingJob.location,
-              description: editingJob.description,
-              min_salary: parseInt(editingJob.min_salary),
-              max_salary: parseInt(editingJob.max_salary),
-              availability: parseInt(editingJob.availability),
-            }
-          : job
-      )
-    );
-
-    setSuccessMessage("✅ Job updated successfully!");
-    setTimeout(() => closeEditModal(), 1500);
-  } catch (error) {
-    console.error("Error updating job:", error);
-    setErrors({ general: "Failed to update job. Please try again." });
-  }
-};
-
+  };
 
   const handleActionChange = (jobId, newAction) => {
     try {
@@ -330,6 +438,7 @@ const handleEditInputChange = (e) => {
     if (window.confirm("Are you sure you want to delete this job listing?")) {
       try {
         setJobs(jobs.filter(job => job.id !== jobId));
+        setFilteredJobs(filteredJobs.filter(job => job.id !== jobId));
         setSuccessMessage("Job deleted successfully!");
         
         // Clear success message after 3 seconds
@@ -344,10 +453,11 @@ const handleEditInputChange = (e) => {
     if (e.target === e.currentTarget) {
       closeAddModal();
       closeEditModal();
+      closeViewModal();
     }
   };
 
-  return (
+    return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[30px]">
       <h1 className="text-2xl font-bold text-gray-800 mb-6">Job Listing Management</h1>
 
@@ -365,6 +475,80 @@ const handleEditInputChange = (e) => {
         </div>
       )}
 
+      {/* Search and Filter Section */}
+      <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          {/* Search Input */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Search jobs or companies...
+            </label>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              placeholder="Search jobs or companies..."
+            />
+          </div>
+
+          {/* Location Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Location
+            </label>
+            <input
+              type="text"
+              value={locationFilter}
+              onChange={(e) => setLocationFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              placeholder="Filter by location"
+            />
+          </div>
+
+          {/* Job Type Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Job Type
+            </label>
+            <select
+              value={jobTypeFilter}
+              onChange={(e) => setJobTypeFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+            >
+              <option value="All Types">All Types</option>
+              <option value="Full-time">Full-time</option>
+              <option value="Part-time">Part-time</option>
+              <option value="Contract">Contract</option>
+              <option value="Remote">Remote</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Results and Clear Filters */}
+        <div className="flex justify-between items-center">
+          <div className="text-gray-600">
+            {filteredJobs.length} job{filteredJobs.length !== 1 ? 's' : ''} found
+          </div>
+          <button
+            onClick={clearFilters}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+          >
+            CLEAR FILTERS
+          </button>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex border-b border-gray-200 mb-6">
+        <button className={`px-4 py-2 font-medium ${savedJobs.length === 0 ? 'text-gray-500' : 'text-blue-600 border-b-2 border-blue-600'}`}>
+          ALL JOBS
+        </button>
+        <button className={`px-4 py-2 font-medium ${savedJobs.length > 0 ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}>
+          SAVED JOBS ({savedJobs.length})
+        </button>
+      </div>
+
       {/* Add Job Button */}
       <div className="mb-6 flex justify-end">
         <button 
@@ -378,30 +562,74 @@ const handleEditInputChange = (e) => {
         </button>
       </div>
 
-      {/* Job Table - Mobile Card View */}
+      {/* Job Cards - Mobile View */}
       <div className="block sm:hidden space-y-4">
-        {jobs.map((job) => (
+        {filteredJobs.map((job) => (
           <div key={job.id} className="bg-white shadow-md rounded-lg p-4 border border-gray-200">
             <div className="space-y-3">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">{job.title}</h3>
-                <p className="text-sm text-gray-500">{job.location}</p>
-                <p className="text-sm text-green-600 font-medium mt-1">
-                  {formatSalary(job.min_salary, job.max_salary)}
-                </p>
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">{job.title}</h3>
+                  <p className="text-sm text-gray-600">{job.company}</p>
+                </div>
+                <button 
+                  onClick={() => toggleSaveJob(job.id)}
+                  className={`p-2 rounded-full ${job.isSaved ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-500'}`}
+                >
+                  <svg className="w-5 h-5" fill={job.isSaved ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                  </svg>
+                </button>
               </div>
               
+              {/* Skills */}
+              <div className="flex flex-wrap gap-1">
+                {job.skills.map((skill, index) => (
+                  <span key={index} className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+
               <div>
-                <p className="text-sm text-gray-600 line-clamp-3">{job.description}</p>
+                <p className="text-sm text-gray-600 line-clamp-2">{job.description}</p>
+              </div>
+
+              {/* Job Details */}
+              <div className="space-y-2 text-sm text-gray-600">
+                <div className="flex items-center">
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  {job.location}
+                </div>
+                <div className="flex items-center">
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {job.job_type}
+                </div>
+                <div className="flex items-center">
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                  </svg>
+                  {formatSalary(job.min_salary, job.max_salary)}
+                </div>
+                <div className="flex items-center">
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  {job.posted_date}
+                </div>
               </div>
               
               <div className="flex justify-between items-center">
                 <span className="inline-flex px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">
-                  Positions: {formatAvailability(job.availability)}
+                  {formatAvailability(job.availability)} Vacancies Left
                 </span>
                 
                 <div className="flex space-x-2">
-                  {/* Changed from dropdown to buttons */}
                   <div className="grid grid-cols-2 gap-2">
                     <button 
                       onClick={() => openEditModal(job)}
@@ -410,7 +638,7 @@ const handleEditInputChange = (e) => {
                       Edit
                     </button>
                     <button 
-                      onClick={() => handleActionChange(job.id, "View")}
+                      onClick={() => openViewModal(job)}
                       className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-xs"
                     >
                       View
@@ -437,40 +665,52 @@ const handleEditInputChange = (e) => {
 
       {/* Job Table - Desktop View */}
       <div className="hidden sm:block bg-white shadow-md rounded-lg overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job Title</th>
-                <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Salary Range</th>
-                <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Availability</th>
-                <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {jobs.map((job) => (
-                <tr key={job.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {job.title}
-                  </td>
-                  <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm text-gray-500">
-                    {job.location}
-                  </td>
-                  <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm text-green-600 font-semibold">
-                    {formatSalary(job.min_salary, job.max_salary)}
-                  </td>
-                  <td className="px-4 py-4 lg:px-6 text-sm text-gray-500 max-w-md">
-                  <div className="line-clamp-3">{job.description}</div>
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job Title</th>
+              <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+              <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+              
+              <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Salary Range</th>
+              <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Availability</th>
+              <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {filteredJobs.map((job) => (
+              <tr key={job.id} className="hover:bg-gray-50">
+                <td className="px-4 py-4 lg:px-6 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{job.title}</div>
+                      <button 
+                        onClick={() => toggleSaveJob(job.id)}
+                        className={`text-xs ${job.isSaved ? 'text-yellow-500' : 'text-red-400 hover:text-yellow-500'}`}
+                      >
+                        {job.isSaved ? 'Saved' : 'Save'}
+                      </button>
+                    </div>
+                  </div>
                 </td>
-                  <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm">
-                    <span className="inline-flex px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">
-                      {formatAvailability(job.availability)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm text-gray-500">
+                  {job.company}
+                </td>
+                <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm text-gray-500">
+                  {job.location}
+                </td>
+                
+                
+                <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm text-green-600 font-semibold">
+                  {formatSalary(job.min_salary, job.max_salary)}
+                </td>
+                <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm">
+                  <span className="inline-flex px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">
+                    {formatAvailability(job.availability)}
+                  </span>
+                </td>
+                <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm text-gray-500">
                   <div className="flex space-x-2">
-                    {/* Changed from dropdown to buttons */}
                     <div className="grid grid-cols-2 gap-2">
                       <button 
                         onClick={() => openEditModal(job)}
@@ -479,7 +719,7 @@ const handleEditInputChange = (e) => {
                         Edit
                       </button>
                       <button 
-                        onClick={() => handleActionChange(job.id, "View")}
+                        onClick={() => openViewModal(job)}
                         className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-xs"
                       >
                         View
@@ -499,13 +739,13 @@ const handleEditInputChange = (e) => {
                     </div>
                   </div>
                 </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-      {/* Add Job Modal - Responsive */}
+      {/* Add Job Modal */}
       {showAddModal && (
         <div 
           className="fixed inset-0 flex items-center justify-center z-50 p-4"
@@ -539,6 +779,24 @@ const handleEditInputChange = (e) => {
               <div>
                 <input
                   type="text"
+                  name="company"
+                  value={newJob.company}
+                  onChange={handleInputChange}
+                  placeholder="Company Name"
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                    errors.company 
+                      ? "border-red-500 focus:ring-red-500" 
+                      : "border-yellow-400 focus:ring-yellow-500"
+                  }`}
+                />
+                {errors.company && (
+                  <p className="text-red-500 text-sm mt-1">{errors.company}</p>
+                )}
+              </div>
+
+              <div>
+                <input
+                  type="text"
                   name="location"
                   value={newJob.location}
                   onChange={handleInputChange}
@@ -551,6 +809,38 @@ const handleEditInputChange = (e) => {
                 />
                 {errors.location && (
                   <p className="text-red-500 text-sm mt-1">{errors.location}</p>
+                )}
+              </div>
+
+              <div>
+                <select
+                  name="job_type"
+                  value={newJob.job_type}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-yellow-400 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                >
+                  <option value="Full-time">Full-time</option>
+                  <option value="Part-time">Part-time</option>
+                  <option value="Contract">Contract</option>
+                  <option value="Remote">Remote</option>
+                </select>
+              </div>
+
+              <div>
+                <input
+                  type="text"
+                  name="skills"
+                  value={newJob.skills}
+                  onChange={handleInputChange}
+                  placeholder="Skills (comma separated, e.g., React, TypeScript, Tailwind CSS)"
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                    errors.skills 
+                      ? "border-red-500 focus:ring-red-500" 
+                      : "border-yellow-400 focus:ring-yellow-500"
+                  }`}
+                />
+                {errors.skills && (
+                  <p className="text-red-500 text-sm mt-1">{errors.skills}</p>
                 )}
               </div>
 
@@ -648,7 +938,7 @@ const handleEditInputChange = (e) => {
         </div>
       )}
 
-      {/* Edit Job Modal - Responsive */}
+      {/* Edit Job Modal */}
       {showEditModal && (
         <div 
           className="fixed inset-0 flex items-center justify-center z-50 p-4"
@@ -682,6 +972,24 @@ const handleEditInputChange = (e) => {
               <div>
                 <input
                   type="text"
+                  name="company"
+                  value={editingJob.company}
+                  onChange={handleEditInputChange}
+                  placeholder="Company Name"
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                    errors.company 
+                      ? "border-red-500 focus:ring-red-500" 
+                      : "border-yellow-400 focus:ring-yellow-500"
+                  }`}
+                />
+                {errors.company && (
+                  <p className="text-red-500 text-sm mt-1">{errors.company}</p>
+                )}
+              </div>
+
+              <div>
+                <input
+                  type="text"
                   name="location"
                   value={editingJob.location}
                   onChange={handleEditInputChange}
@@ -694,6 +1002,38 @@ const handleEditInputChange = (e) => {
                 />
                 {errors.location && (
                   <p className="text-red-500 text-sm mt-1">{errors.location}</p>
+                )}
+              </div>
+
+              <div>
+                <select
+                  name="job_type"
+                  value={editingJob.job_type}
+                  onChange={handleEditInputChange}
+                  className="w-full px-3 py-2 border border-yellow-400 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                >
+                  <option value="Full-time">Full-time</option>
+                  <option value="Part-time">Part-time</option>
+                  <option value="Contract">Contract</option>
+                  <option value="Remote">Remote</option>
+                </select>
+              </div>
+
+              <div>
+                <input
+                  type="text"
+                  name="skills"
+                  value={editingJob.skills}
+                  onChange={handleEditInputChange}
+                  placeholder="Skills (comma separated)"
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                    errors.skills 
+                      ? "border-red-500 focus:ring-red-500" 
+                      : "border-yellow-400 focus:ring-yellow-500"
+                  }`}
+                />
+                {errors.skills && (
+                  <p className="text-red-500 text-sm mt-1">{errors.skills}</p>
                 )}
               </div>
 
@@ -790,8 +1130,85 @@ const handleEditInputChange = (e) => {
           </div>
         </div>
       )}
+
+      {/* View Job Modal */}
+      {showViewModal && selectedJob && (
+        <div 
+          className="fixed inset-0 flex items-center justify-center z-50 p-4"
+          onClick={handleOverlayClick}
+        >
+          <div 
+            className="bg-white rounded-lg p-6 w-full max-w-2xl shadow-xl border border-gray-200 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">Job Details</h2>
+            
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">{selectedJob.title}</h3>
+                  <p className="text-gray-600">{selectedJob.company}</p>
+                </div>
+                <div className="text-right">
+                  <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
+                    selectedJob.job_type === 'Full-time' ? 'bg-green-100 text-green-800' : 
+                    selectedJob.job_type === 'Part-time' ? 'bg-blue-100 text-blue-800' : 
+                    'bg-purple-100 text-purple-800'
+                  }`}>
+                    {selectedJob.job_type}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <strong className="text-gray-700">Location:</strong>
+                  <p className="text-gray-600">{selectedJob.location}</p>
+                </div>
+                <div>
+                  <strong className="text-gray-700">Salary Range:</strong>
+                  <p className="text-green-600 font-semibold">{formatSalary(selectedJob.min_salary, selectedJob.max_salary)}</p>
+                </div>
+                <div>
+                  <strong className="text-gray-700">Available Positions:</strong>
+                  <p className="text-gray-600">{selectedJob.availability}</p>
+                </div>
+                <div>
+                  <strong className="text-gray-700">Posted:</strong>
+                  <p className="text-gray-600">{selectedJob.posted_date}</p>
+                </div>
+              </div>
+
+              <div>
+                <strong className="text-gray-700">Skills Required:</strong>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {selectedJob.skills.map((skill, index) => (
+                    <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <strong className="text-gray-700">Job Description:</strong>
+                <p className="text-gray-600 mt-2 whitespace-pre-line">{selectedJob.description}</p>
+              </div>
+            </div>
+
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={closeViewModal}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default JobListing
+export default JobListing;
