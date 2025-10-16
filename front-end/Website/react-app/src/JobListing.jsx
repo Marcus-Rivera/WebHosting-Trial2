@@ -13,6 +13,7 @@ const JobListing = () => {
   const [locationFilter, setLocationFilter] = useState("");
   const [jobTypeFilter, setJobTypeFilter] = useState("All Types");
   const [savedJobs, setSavedJobs] = useState([]);
+  const [activeTab, setActiveTab] = useState("all"); // "all" or "saved"
   
   const [newJob, setNewJob] = useState({
     title: "",
@@ -74,6 +75,14 @@ const JobListing = () => {
         // Load saved jobs from localStorage
         const saved = JSON.parse(localStorage.getItem('savedJobs') || '[]');
         setSavedJobs(saved);
+
+        // Update jobs with saved status
+        const updatedJobs = formattedJobs.map(job => ({
+          ...job,
+          isSaved: saved.some(savedJob => savedJob.id === job.id)
+        }));
+        setJobs(updatedJobs);
+        setFilteredJobs(updatedJobs);
       } catch (err) {
         console.error("Error fetching jobs:", err);
         setError("Failed to load job listings. Please try again later.");
@@ -85,9 +94,14 @@ const JobListing = () => {
     fetchJobs();
   }, []);
 
-  // Filter jobs based on search and filters
+  // Filter jobs based on search, filters, and active tab
   useEffect(() => {
     let filtered = jobs;
+
+    // Tab filter
+    if (activeTab === "saved") {
+      filtered = filtered.filter(job => job.isSaved);
+    }
 
     // Search filter
     if (searchTerm) {
@@ -111,7 +125,7 @@ const JobListing = () => {
     }
 
     setFilteredJobs(filtered);
-  }, [searchTerm, locationFilter, jobTypeFilter, jobs]);
+  }, [searchTerm, locationFilter, jobTypeFilter, jobs, activeTab]);
 
   // Helper formatters
   const formatSalary = (min, max) =>
@@ -137,13 +151,24 @@ const JobListing = () => {
     localStorage.setItem('savedJobs', JSON.stringify(updatedSavedJobs));
 
     // Update jobs with saved status
-    setJobs(prevJobs =>
-      prevJobs.map(job =>
-        job.id === jobId
-          ? { ...job, isSaved: !isCurrentlySaved }
-          : job
-      )
+    const updatedJobs = jobs.map(job =>
+      job.id === jobId
+        ? { ...job, isSaved: !isCurrentlySaved }
+        : job
     );
+    
+    setJobs(updatedJobs);
+    
+    // Update filtered jobs based on current tab
+    if (activeTab === "saved" && isCurrentlySaved) {
+      // If unsaving from saved tab, remove from filtered view
+      setFilteredJobs(prev => prev.filter(job => job.id !== jobId));
+    } else {
+      setFilteredJobs(updatedJobs.filter(job => {
+        if (activeTab === "saved") return job.isSaved;
+        return true;
+      }));
+    }
   };
 
   // Clear all filters
@@ -151,6 +176,11 @@ const JobListing = () => {
     setSearchTerm("");
     setLocationFilter("");
     setJobTypeFilter("All Types");
+  };
+
+  // Switch between All Jobs and Saved Jobs tabs
+  const switchTab = (tab) => {
+    setActiveTab(tab);
   };
 
   if (loading) {
@@ -529,6 +559,7 @@ const JobListing = () => {
         <div className="flex justify-between items-center">
           <div className="text-gray-600">
             {filteredJobs.length} job{filteredJobs.length !== 1 ? 's' : ''} found
+            {activeTab === "saved" && " in saved jobs"}
           </div>
           <button
             onClick={clearFilters}
@@ -541,12 +572,26 @@ const JobListing = () => {
 
       {/* Tabs */}
       <div className="flex border-b border-gray-200 mb-6">
-        <button className={`px-4 py-2 font-medium ${savedJobs.length === 0 ? 'text-gray-500' : 'text-blue-600 border-b-2 border-blue-600'}`}>
+        <button 
+          onClick={() => switchTab("all")}
+          className={`px-4 py-2 font-medium ${
+            activeTab === "all" 
+              ? 'text-blue-600 border-b-2 border-blue-600' 
+              : 'text-gray-500 hover:text-blue-600'
+          }`}
+        >
           ALL JOBS
         </button>
-        <button className={`px-4 py-2 font-medium ${savedJobs.length > 0 ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}>
-          SAVED JOBS ({savedJobs.length})
-        </button>
+       <button 
+  onClick={() => switchTab("saved")}
+  className={`px-4 py-2 font-medium ${
+    activeTab === "saved" 
+      ? 'text-blue-600 border-b-2 border-blue-600' 
+      : 'text-gray-500 hover:text-blue-600'
+  }`}
+>
+  SAVED JOBS ({Math.max(0, savedJobs.length - 1)})
+</button>
       </div>
 
       {/* Add Job Button */}
@@ -564,103 +609,101 @@ const JobListing = () => {
 
       {/* Job Cards - Mobile View */}
       <div className="block sm:hidden space-y-4">
-        {filteredJobs.map((job) => (
-          <div key={job.id} className="bg-white shadow-md rounded-lg p-4 border border-gray-200">
-            <div className="space-y-3">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{job.title}</h3>
-                  <p className="text-sm text-gray-600">{job.company}</p>
+        {filteredJobs.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            {activeTab === "saved" ? "No saved jobs found" : "No jobs found"}
+          </div>
+        ) : (
+          filteredJobs.map((job) => (
+            <div key={job.id} className="bg-white shadow-md rounded-lg p-4 border border-gray-200">
+              <div className="space-y-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900">{job.title}</h3>
+                    <p className="text-sm text-gray-600">{job.company}</p>
+                  </div>
+                  <button 
+                    onClick={() => toggleSaveJob(job.id)}
+                    className={`p-2 rounded-full transition-colors ${
+                      job.isSaved 
+                        ? 'text-yellow-500 bg-yellow-50' 
+                        : 'text-gray-400 hover:text-yellow-500 hover:bg-gray-50'
+                    }`}
+                  >
+                    <svg className="w-5 h-5" fill={job.isSaved ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                    </svg>
+                  </button>
                 </div>
-                <button 
-                  onClick={() => toggleSaveJob(job.id)}
-                  className={`p-2 rounded-full ${job.isSaved ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-500'}`}
-                >
-                  <svg className="w-5 h-5" fill={job.isSaved ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                  </svg>
-                </button>
-              </div>
-              
-              {/* Skills */}
-              <div className="flex flex-wrap gap-1">
-                {job.skills.map((skill, index) => (
-                  <span key={index} className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
-                    {skill}
-                  </span>
-                ))}
-              </div>
-
-              <div>
-                <p className="text-sm text-gray-600 line-clamp-2">{job.description}</p>
-              </div>
-
-              {/* Job Details */}
-              <div className="space-y-2 text-sm text-gray-600">
-                <div className="flex items-center">
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  {job.location}
-                </div>
-                <div className="flex items-center">
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {job.job_type}
-                </div>
-                <div className="flex items-center">
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                  </svg>
-                  {formatSalary(job.min_salary, job.max_salary)}
-                </div>
-                <div className="flex items-center">
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  {job.posted_date}
-                </div>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <span className="inline-flex px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">
-                  {formatAvailability(job.availability)} Vacancies Left
-                </span>
                 
-                <div className="flex space-x-2">
-                  <div className="grid grid-cols-2 gap-2">
-                    <button 
-                      onClick={() => openEditModal(job)}
-                      className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs"
-                    >
-                      Edit
-                    </button>
-                    <button 
-                      onClick={() => openViewModal(job)}
-                      className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-xs"
-                    >
-                      View
-                    </button>
-                    <button 
-                      onClick={() => handleActionChange(job.id, "Archive")}
-                      className="px-3 py-1 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors text-xs"
-                    >
-                      Archive
-                    </button>
-                    <button 
-                      onClick={() => deleteJob(job.id)}
-                      className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-xs"
-                    >
-                      Delete
-                    </button>
+                {/* Skills */}
+                <div className="flex flex-wrap gap-1">
+                  {job.skills.map((skill, index) => (
+                    <span key={index} className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+
+                <div>
+                  <p className="text-sm text-gray-600 line-clamp-2">{job.description}</p>
+                </div>
+
+                {/* Job Details */}
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div className="flex items-center">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    {job.location}
+                  </div>
+                  <div className="flex items-center">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {job.job_type}
+                  </div>
+                  <div className="flex items-center">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                    </svg>
+                    {formatSalary(job.min_salary, job.max_salary)}
+                  </div>
+                  <div className="flex items-center">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    {job.posted_date}
+                  </div>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <span className="inline-flex px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">
+                    {formatAvailability(job.availability)} Vacancies Left
+                  </span>
+                  
+                  <div className="flex space-x-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <button 
+                        onClick={() => openEditModal(job)}
+                        className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs"
+                      >
+                        Edit
+                      </button>
+                      <button 
+                        onClick={() => deleteJob(job.id)}
+                        className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-xs"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       {/* Job Table - Desktop View */}
@@ -671,64 +714,56 @@ const JobListing = () => {
               <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job Title</th>
               <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
               <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-              
+              <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
               <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Salary Range</th>
               <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Availability</th>
               <th className="px-4 py-3 lg:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              <th className="px-4 py-3 lg:px-6 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Save</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredJobs.map((job) => (
-              <tr key={job.id} className="hover:bg-gray-50">
-                <td className="px-4 py-4 lg:px-6 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{job.title}</div>
-                      <button 
-                        onClick={() => toggleSaveJob(job.id)}
-                        className={`text-xs ${job.isSaved ? 'text-yellow-500' : 'text-red-400 hover:text-yellow-500'}`}
-                      >
-                        {job.isSaved ? 'Saved' : 'Save'}
-                      </button>
-                    </div>
-                  </div>
+            {filteredJobs.length === 0 ? (
+              <tr>
+                <td colSpan="8" className="px-4 py-8 text-center text-gray-500">
+                  {activeTab === "saved" ? "No saved jobs found" : "No jobs found"}
                 </td>
-                <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm text-gray-500">
-                  {job.company}
-                </td>
-                <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm text-gray-500">
-                  {job.location}
-                </td>
-                
-                
-                <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm text-green-600 font-semibold">
-                  {formatSalary(job.min_salary, job.max_salary)}
-                </td>
-                <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm">
-                  <span className="inline-flex px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">
-                    {formatAvailability(job.availability)}
-                  </span>
-                </td>
-                <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm text-gray-500">
-                  <div className="flex space-x-2">
-                    <div className="grid grid-cols-2 gap-2">
+              </tr>
+            ) : (
+              filteredJobs.map((job) => (
+                <tr key={job.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {job.title}
+                  </td>
+                  <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm text-gray-500">
+                    {job.company}
+                  </td>
+                  <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm text-gray-500">
+                    {job.location}
+                  </td>
+                  <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      job.job_type === 'Full-time' ? 'bg-green-100 text-green-800' : 
+                      job.job_type === 'Part-time' ? 'bg-blue-100 text-blue-800' : 
+                      'bg-purple-100 text-purple-800'
+                    }`}>
+                      {job.job_type}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm text-green-600 font-semibold">
+                    {formatSalary(job.min_salary, job.max_salary)}
+                  </td>
+                  <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm">
+                    <span className="inline-flex px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">
+                      {formatAvailability(job.availability)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm text-gray-500">
+                    <div className="flex space-x-2">
                       <button 
                         onClick={() => openEditModal(job)}
                         className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs"
                       >
                         Edit
-                      </button>
-                      <button 
-                        onClick={() => openViewModal(job)}
-                        className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-xs"
-                      >
-                        View
-                      </button>
-                      <button 
-                        onClick={() => handleActionChange(job.id, "Archive")}
-                        className="px-3 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors text-xs"
-                      >
-                        Archive
                       </button>
                       <button 
                         onClick={() => deleteJob(job.id)}
@@ -737,10 +772,27 @@ const JobListing = () => {
                         Delete
                       </button>
                     </div>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="px-4 py-4 lg:px-6 whitespace-nowrap text-sm text-gray-500">
+                    <div className="flex justify-center">
+                      <button 
+                        onClick={() => toggleSaveJob(job.id)}
+                        className={`p-2 rounded-full transition-colors ${
+                          job.isSaved 
+                            ? 'text-yellow-500 bg-yellow-50' 
+                            : 'text-gray-400 hover:text-yellow-500 hover:bg-gray-50'
+                        }`}
+                        title={job.isSaved ? 'Remove from saved' : 'Save job'}
+                      >
+                        <svg className="w-5 h-5" fill={job.isSaved ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
