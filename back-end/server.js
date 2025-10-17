@@ -7,8 +7,60 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const SECRET_KEY = "your-secret-key"; // Use .env for real projects
 
+
 // Initialize Express application
 const app = express();
+
+// 
+const GEMINI_API_KEY = "AIzaSyD-QXNB8c8jiYNisBRSU33GcyP1txqhjt0";
+
+app.use(cors());
+app.use(express.json());
+
+// Route to handle Gemini API requests
+app.post("/api/gemini", async (req, res) => {
+  try {
+    // Check if API key is set
+    if (!GEMINI_API_KEY) {
+      return res.status(500).json({ error: "GEMINI_API_KEY is not defined" });
+    }
+
+    // Get prompt from frontend
+    const { prompt } = req.body;
+    if (!prompt) {
+      return res.status(400).json({ error: "Prompt is required" });
+    }
+
+    // Call Gemini API
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    // Safely extract Gemini text output
+    const output =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response from Gemini";
+
+    // Send cleaned result to frontend
+    res.json({ output });
+
+  } catch (err) {
+    console.error("Gemini API Error:", err);
+    res.status(500).json({ error: "Something went wrong with Gemini API" });
+  }
+});
+
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
 
 // Connect to SQLite database
 const db = new sqlite3.Database("tratrabaho.db");
