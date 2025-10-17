@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -17,6 +17,8 @@ import {
   DialogActions,
   Divider,
   Typography,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
@@ -39,6 +41,9 @@ const JobListingsSection = () => {
   const [applyModalOpen, setApplyModalOpen] = useState(false);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [applicationData, setApplicationData] = useState({
     fullName: '',
     email: '',
@@ -47,23 +52,59 @@ const JobListingsSection = () => {
     resume: null,
   });
 
-  // Sample job data
-  const jobs = [
-    {
-      id: 1,
-      title: 'Senior Frontend Developer',
-      company: 'Tech Solutions Inc.',
-      location: 'Makati, Metro Manila',
-      type: 'Full-time',
-      salary: '₱80,000 - ₱120,000',
-      posted: '2 days ago',
-      logo: 'https://via.placeholder.com/50',
-      description: 'We are looking for an experienced Frontend Developer proficient in React...',
-      tags: ['React', 'TypeScript', 'Tailwind CSS'],
-      vacantleft: '5 Vacancies Left',
-      remote: false,
-    },
-  ];
+  // Fetch jobs from backend
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('http://localhost:5000/api/jobs');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch jobs');
+        }
+        
+        const data = await response.json();
+        
+        // Format the data to match our component structure
+        const formattedJobs = data.map(job => ({
+          id: job.job_id,
+          title: job.title,
+          company: job.company,
+          location: job.location,
+          type: job.type,
+          salary: `₱${parseInt(job.min_salary).toLocaleString()} - ₱${parseInt(job.max_salary).toLocaleString()}`,
+          posted: job.posted,
+          description: job.description,
+          tags: job.tags ? job.tags.split(',').map(tag => tag.trim()) : [],
+          vacantleft: `${job.vacantleft} Vacancies Left`,
+          remote: job.remote === 1,
+          min_salary: job.min_salary,
+          max_salary: job.max_salary,
+        }));
+        
+        setJobs(formattedJobs);
+        setError('');
+      } catch (err) {
+        console.error('Error fetching jobs:', err);
+        setError('Failed to load job listings. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobs();
+  }, []);
+
+  // Load saved jobs from localStorage
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem('savedJobs') || '[]');
+    setSavedJobs(saved);
+  }, []);
+
+  // Save to localStorage whenever savedJobs changes
+  useEffect(() => {
+    localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
+  }, [savedJobs]);
 
   const toggleSaveJob = (jobId) => {
     setSavedJobs(prev => 
@@ -100,6 +141,7 @@ const JobListingsSection = () => {
 
   const handleApplicationSubmit = () => {
     console.log('Application submitted:', applicationData);
+    console.log('Job applied for:', selectedJob);
     alert('Application submitted successfully!');
     handleCloseApplyModal();
   };
@@ -107,13 +149,19 @@ const JobListingsSection = () => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Check file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File size should not exceed 5MB');
+        return;
+      }
       setApplicationData(prev => ({ ...prev, resume: file }));
     }
   };
 
   const filteredJobs = jobs.filter(job => {
     const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         job.company.toLowerCase().includes(searchTerm.toLowerCase());
+                         job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         job.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesLocation = location === '' || job.location.toLowerCase().includes(location.toLowerCase());
     const matchesType = jobType === 'all' || job.type === jobType;
     const matchesTab = tabValue === 0 || (tabValue === 1 && savedJobs.includes(job.id));
@@ -133,9 +181,9 @@ const JobListingsSection = () => {
               <h3 className="text-xl font-bold text-[#272343] mb-1">{job.title}</h3>
               <p className="text-gray-600 font-medium mb-2">{job.company}</p>
               <div className="flex flex-wrap gap-2 mb-3">
-                {job.tags.map(tag => (
+                {job.tags.map((tag, index) => (
                   <Chip 
-                    key={tag} 
+                    key={index} 
                     label={tag} 
                     size="small"
                     sx={{
@@ -157,7 +205,7 @@ const JobListingsSection = () => {
           </IconButton>
         </div>
 
-        <p className="text-gray-700 mb-4">{job.description}</p>
+        <p className="text-gray-700 mb-4 line-clamp-2">{job.description}</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
           <div className="flex items-center gap-2 text-gray-600">
@@ -228,6 +276,37 @@ const JobListingsSection = () => {
     </Card>
   );
 
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <CircularProgress sx={{ color: '#FBDA23' }} size={60} />
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen">
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+        <Button
+          variant="contained"
+          onClick={() => window.location.reload()}
+          sx={{
+            backgroundColor: '#FBDA23',
+            color: '#272343',
+            fontWeight: 'bold',
+          }}
+        >
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen">
       {/* Header */}
@@ -277,6 +356,7 @@ const JobListingsSection = () => {
               <MenuItem value="Full-time">Full-time</MenuItem>
               <MenuItem value="Part-time">Part-time</MenuItem>
               <MenuItem value="Contract">Contract</MenuItem>
+              <MenuItem value="Freelance">Freelance</MenuItem>
             </TextField>
           </div>
 
@@ -336,7 +416,11 @@ const JobListingsSection = () => {
           <Card className="p-12 text-center">
             <WorkIcon sx={{ fontSize: 60, color: '#BAE8E8', mb: 2 }} />
             <h3 className="text-xl font-bold text-[#272343] mb-2">No jobs found</h3>
-            <p className="text-gray-600">Try adjusting your search or filters</p>
+            <p className="text-gray-600">
+              {tabValue === 1 
+                ? "You haven't saved any jobs yet" 
+                : "Try adjusting your search or filters"}
+            </p>
           </Card>
         )}
       </div>
@@ -456,6 +540,10 @@ const JobListingsSection = () => {
               '&:hover': {
                 backgroundColor: '#FFE55C',
               },
+              '&:disabled': {
+                backgroundColor: '#E0E0E0',
+                color: '#9E9E9E',
+              },
             }}
           >
             Submit Application
@@ -496,9 +584,9 @@ const JobListingsSection = () => {
               </div>
 
               <div className="flex flex-wrap gap-2 mb-4">
-                {selectedJob.tags.map(tag => (
+                {selectedJob.tags.map((tag, index) => (
                   <Chip 
-                    key={tag} 
+                    key={index} 
                     label={tag} 
                     sx={{
                       backgroundColor: '#BAE8E8',
@@ -563,30 +651,13 @@ const JobListingsSection = () => {
               <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#272343', mb: 2 }}>
                 Job Description
               </Typography>
-              <Typography variant="body1" sx={{ mb: 3, lineHeight: 1.8 }}>
+              <Typography variant="body1" sx={{ mb: 3, lineHeight: 1.8, whiteSpace: 'pre-line' }}>
                 {selectedJob.description}
               </Typography>
 
-              <Typography variant="body1" sx={{ mb: 2, lineHeight: 1.8 }}>
-                We are seeking a talented professional to join our dynamic team. The ideal candidate will have:
-              </Typography>
-              <ul className="list-disc list-inside mb-4 space-y-1">
-                <li>Strong experience in relevant technologies</li>
-                <li>Excellent problem-solving and communication skills</li>
-                <li>Ability to work collaboratively in a team environment</li>
-                <li>Passion for continuous learning and professional development</li>
-              </ul>
+             
 
-              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#272343', mb: 2 }}>
-                Benefits
-              </Typography>
-              <ul className="list-disc list-inside space-y-1">
-                <li>Competitive salary package</li>
-                <li>Health insurance coverage</li>
-                <li>Professional development opportunities</li>
-                <li>Flexible work arrangements</li>
-                <li>Collaborative team culture</li>
-              </ul>
+        
             </>
           )}
         </DialogContent>

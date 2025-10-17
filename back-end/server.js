@@ -179,37 +179,137 @@ app.put("/api/users/:user_id", (req, res) => {
 });
 
 // ============================================================================
-// JOB FETCH
+// JOB FETCH - Get all jobs
 // ============================================================================
 app.get("/api/jobs", (req, res) => {
-  const query = `SELECT job_id, title, description, location, min_salary, max_salary, availability FROM job`
+  const query = `
+    SELECT job_id, title, description, location, min_salary, max_salary, 
+           vacantleft, company, type, posted, tags, remote 
+    FROM job
+  `;
+  
   db.all(query, [], (err, rows) => {
     if (err) {
-      console.error("Error fetching jobs", err);
-      return res.status(500).json({ message: "Database Error"});
+      console.error("Error fetching jobs:", err);
+      return res.status(500).json({ message: "Database error" });
     }
     res.json(rows);
-  })
-})
+  });
+});
 
 // ============================================================================
-// JOB UPDATE 
+// JOB ADD - Create a new job
 // ============================================================================
-app.put("/api/job/:job_id", (req, res) => {
+app.post("/api/jobs", (req, res) => {
+  const { 
+    title, 
+    description, 
+    location, 
+    min_salary, 
+    max_salary, 
+    vacantleft, 
+    company, 
+    type, 
+    tags, 
+    remote 
+  } = req.body;
+
+  // Validate required fields
+  if (!title || !description || !location || !min_salary || !max_salary || !vacantleft || !company || !type || !tags) {
+    return res.status(400).json({ message: "All fields are required." });
+  }
+
+  const posted = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+
+  const query = `
+    INSERT INTO job (title, description, location, min_salary, max_salary, vacantleft, company, type, posted, tags, remote)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  const params = [
+    title, 
+    description, 
+    location, 
+    min_salary, 
+    max_salary, 
+    vacantleft, 
+    company, 
+    type, 
+    posted, 
+    tags, 
+    remote || 0
+  ];
+
+  db.run(query, params, function (err) {
+    if (err) {
+      console.error("Error inserting job:", err);
+      return res.status(500).json({ message: "Database error while adding job." });
+    }
+
+    // Return the newly created job
+    res.status(201).json({
+      message: "Job added successfully.",
+      job_id: this.lastID,
+      title,
+      description,
+      location,
+      min_salary,
+      max_salary,
+      vacantleft,
+      company,
+      type,
+      posted,
+      tags,
+      remote: remote || 0
+    });
+  });
+});
+
+// ============================================================================
+// JOB UPDATE - Update an existing job
+// ============================================================================
+app.put("/api/jobs/:job_id", (req, res) => {
   const { job_id } = req.params;
-  const { title, location, min_salary, max_salary, description, availability } = req.body;
+  const { 
+    title, 
+    description, 
+    location, 
+    min_salary, 
+    max_salary, 
+    vacantleft, 
+    company, 
+    type, 
+    posted, 
+    tags, 
+    remote 
+  } = req.body;
 
-  if (!title || !location || !description) {
+  // Validate required fields
+  if (!title || !description || !location || !company || !type || !tags) {
     return res.status(400).json({ message: "Missing required fields" });
   }
 
   const query = `
     UPDATE job 
-    SET title = ?, location = ?, min_salary = ?, max_salary = ?, description = ?, availability = ?
-    WHERE job_id = ?;
+    SET title = ?, description = ?, location = ?, min_salary = ?, max_salary = ?, 
+        vacantleft = ?, company = ?, type = ?, posted = ?, tags = ?, remote = ?
+    WHERE job_id = ?
   `;
 
-  const params = [title, location, min_salary, max_salary, description, availability, job_id];
+  const params = [
+    title, 
+    description, 
+    location, 
+    min_salary, 
+    max_salary, 
+    vacantleft, 
+    company, 
+    type, 
+    posted, 
+    tags, 
+    remote || 0, 
+    job_id
+  ];
 
   db.run(query, params, function (err) {
     if (err) {
@@ -226,12 +326,12 @@ app.put("/api/job/:job_id", (req, res) => {
 });
 
 // ============================================================================
-// JOB DELETE
+// JOB DELETE - Delete a job
 // ============================================================================
-app.delete("/api/job/:job_id", (req, res) => {
+app.delete("/api/jobs/:job_id", (req, res) => {
   const { job_id } = req.params;
 
-  const query = `DELETE FROM job WHERE job_id = ?;`;
+  const query = `DELETE FROM job WHERE job_id = ?`;
 
   db.run(query, [job_id], function (err) {
     if (err) {
@@ -244,36 +344,6 @@ app.delete("/api/job/:job_id", (req, res) => {
     }
 
     res.json({ message: "Job deleted successfully" });
-  });
-});
-
-// ============================================================================
-// JOB ADD
-// ============================================================================
-app.post("/api/job", (req, res) => {
-  const { title, location, min_salary, max_salary, description, availability } = req.body;
-
-  if (!title || !location || !description || !min_salary || !max_salary || !availability) {
-    return res.status(400).json({ message: "All fields are required." });
-  }
-
-  const query = `
-    INSERT INTO job (title, location, min_salary, max_salary, description, availability)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `;
-
-  const params = [title, location, min_salary, max_salary, description, availability];
-
-  db.run(query, params, function (err) {
-    if (err) {
-      console.error("Error inserting job:", err);
-      return res.status(500).json({ message: "Database error while adding job." });
-    }
-
-    res.json({
-      message: "Job added successfully.",
-      job_id: this.lastID, // Return the new job ID
-    });
   });
 });
 
