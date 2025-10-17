@@ -7,16 +7,27 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const SECRET_KEY = "your-secret-key"; // Use .env for real projects
 
+// Test for Resume Saver
+const multer = require('multer');
+const path = require('path');
 
 // Initialize Express application
 const app = express();
 
-// 
+// Gemini API Key
 const GEMINI_API_KEY = "AIzaSyD-QXNB8c8jiYNisBRSU33GcyP1txqhjt0";
 
+// Middleware configuration
 app.use(cors());
 app.use(express.json());
+app.use(bodyParser.json());
 
+// Connect to SQLite database
+const db = new sqlite3.Database("tratrabaho.db");
+
+// ============================================================================
+// GEMINI API ENDPOINT
+// ============================================================================
 // Route to handle Gemini API requests
 app.post("/api/gemini", async (req, res) => {
   try {
@@ -58,17 +69,6 @@ app.post("/api/gemini", async (req, res) => {
   }
 });
 
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
-
-// Connect to SQLite database
-const db = new sqlite3.Database("tratrabaho.db");
-
-// Middleware configuration
-app.use(cors());               // Enable CORS for cross-origin requests
-app.use(bodyParser.json());    // Parse incoming JSON payloads
-
 // ============================================================================
 // LOGIN ENDPOINT
 // ============================================================================
@@ -102,7 +102,6 @@ app.post("/api/login", async (req, res) => {
       return res.status(401).json({ status: "error", message: "Invalid email or password" });
     }
 
-
     // Create JWT (expires in 1 hour) 
     const token = jwt.sign({ id: user.user_id, email: user.email, role: user.role }, SECRET_KEY, 
       {expiresIn: "1h",});
@@ -113,24 +112,29 @@ app.post("/api/login", async (req, res) => {
       message: "Login successful",
       token,
       user: {
-        id: user.id,
+        id: user.user_id,
+        email: user.email,
+        firstname: user.firstname,
+        lastname: user.lastname,
         role: user.role,
       },
     });
   });
 });
 
+// ============================================================================
+// VERIFY TOKEN ENDPOINT
+// ============================================================================
 app.post("/api/verifyToken", (req, res) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
   if (!token) return res.json({ valid: false });
 
-  jwt.verify(token, "your-secret-key", (err, decoded) => {
+  jwt.verify(token, SECRET_KEY, (err, decoded) => {
     if (err) return res.json({ valid: false });
     res.json({ valid: true, user: decoded });
   });
 });
-
 
 // ============================================================================
 // SIGNUP ENDPOINT
@@ -192,7 +196,6 @@ app.post("/api/signup", async (req, res) => {
     res.status(500).json({ status: "error", message: "Server error" });
   }
 });
-
 
 // ============================================================================
 // FETCH ALL USERS
@@ -485,10 +488,131 @@ app.put("/api/profile/:email", (req, res) => {
   });
 });
 
+// ============================================================================
+// RESUME ENDPOINTS - Using SQLite
+// ============================================================================
 
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /pdf/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only PDF files are allowed!'));
+    }
+  },
+});
+
+// Save resume to database
+app.post('/api/resume/save', upload.single('resume'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const { userId, resumeData } = req.body;
+    const filename = req.file.originalname;
+    const fileData = req.file.buffer;
+    const createdAt = new Date().toISOString();
+
+    // Insert resume into SQLite database
+    const query = `
+      INSERT INTO resume (user_id, filename, file_data, created_at) 
+      VALUES (?, ?, ?, ?)
+    `;
+
+    db.run(query, [userId || null, filename, fileData, createdAt], function(err) {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ error: 'Failed to save resume to database' });
+      }
+
+      res.json({
+        success: true,
+        message: 'Resume saved successfully',
+        resumeId: this.lastID,
+        filename: filename,
+      });
+    });
+  } catch (error) {
+    console.error('Error saving resume:', error);
+    res.status(500).json({ error: 'Failed to save resume' });
+  }
+});
+
+// Get user's resumes
+app.get('/api/resume/user/:userId', (req, res) => {
+  const { userId } = req.params;
+
+  const query = `
+    SELECT resume_id, user_id, created_at, filename 
+    FROM resume 
+    WHERE user_id = ? 
+    ORDER BY created_at DESC
+  `;
+
+  db.all(query, [userId], (err, results) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Failed to fetch resumes' });
+    }
+
+    res.json(results);
+  });
+});
+
+// Download/retrieve resume
+app.get('/api/resume/download/:resumeId', (req, res) => {
+  const { resumeId } = req.params;
+
+  const query = 'SELECT filename, file_data FROM resume WHERE resume_id = ?';
+
+  db.get(query, [resumeId], (err, resume) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Failed to retrieve resume' });
+    }
+
+    if (!resume) {
+      return res.status(404).json({ error: 'Resume not found' });
+    }
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${resume.filename}"`);
+    res.send(resume.file_data);
+  });
+});
+
+// Delete resume
+app.delete('/api/resume/:resumeId', (req, res) => {
+  const { resumeId } = req.params;
+
+  const query = 'DELETE FROM resume WHERE resume_id = ?';
+
+  db.run(query, [resumeId], function(err) {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Failed to delete resume' });
+    }
+
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Resume not found' });
+    }
+
+    res.json({ success: true, message: 'Resume deleted successfully' });
+  });
+});
 
 // ============================================================================
 // SERVER START
 // ============================================================================
-// Start Express server on port 5000
-app.listen(5000, () => console.log("Server running on http://localhost:5000"));
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`✅ Server running on http://localhost:${PORT}`));

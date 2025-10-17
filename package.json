@@ -12,6 +12,7 @@
   "dependencies": {
     "dotenv": "^17.2.3",
     "jspdf": "^3.0.3",
+    "multer": "^2.0.2",
     "react-markdown": "^10.1.0"
   }
 }
