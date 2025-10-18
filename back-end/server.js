@@ -612,6 +612,104 @@ app.delete('/api/resume/:resumeId', (req, res) => {
 });
 
 // ============================================================================
+// CHAT HISTORY ENDPOINTS
+// ============================================================================
+
+// Save chat history
+app.post('/api/chat/save', (req, res) => {
+  try {
+    const { userId, chatData, resumeData } = req.body;
+    
+    if (!userId || !chatData) {
+      return res.status(400).json({ error: 'userId and chatData are required' });
+    }
+
+    const chatDataString = JSON.stringify(chatData);
+    const resumeDataString = resumeData ? JSON.stringify(resumeData) : null;
+    const createdAt = new Date().toISOString();
+
+    const query = `
+      INSERT INTO chathistory (user_id, chat_data, resume_data, timestamp)
+      VALUES (?, ?, ?, ?)
+    `;
+
+    db.run(query, [userId, chatDataString, resumeDataString, createdAt], function(err) {
+      if (err) {
+        console.error('Error saving chat history:', err);
+        return res.status(500).json({ error: 'Failed to save chat history' });
+      }
+
+      res.json({ 
+        success: true, 
+        message: 'Chat history saved successfully',
+        chatId: this.lastID
+      });
+    });
+  } catch (error) {
+    console.error('Error in save chat endpoint:', error);
+    res.status(500).json({ error: 'Server error while saving chat' });
+  }
+});
+
+// Get user's chat history
+app.get('/api/chat/history/:userId', (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const query = `
+      SELECT chat_id, user_id, chat_data, resume_data, timestamp
+      FROM chathistory 
+      WHERE user_id = ? 
+      ORDER BY timestamp DESC
+    `;
+
+    db.all(query, [userId], (err, results) => {
+      if (err) {
+        console.error('Error fetching chat history:', err);
+        return res.status(500).json({ error: 'Failed to fetch chat history' });
+      }
+
+      // Parse JSON strings back to objects
+      const parsedResults = results.map(row => ({
+        ...row,
+        chat_data: JSON.parse(row.chat_data),
+        resume_data: row.resume_data ? JSON.parse(row.resume_data) : null
+      }));
+
+      res.json({ success: true, data: parsedResults });
+    });
+  } catch (error) {
+    console.error('Error in get chat history endpoint:', error);
+    res.status(500).json({ error: 'Server error while fetching chat history' });
+  }
+});
+
+// Delete chat history
+app.delete('/api/chat/:chatId', (req, res) => {
+  try {
+    const { chatId } = req.params;
+
+    const query = 'DELETE FROM chathistory WHERE chat_id = ?';
+
+    db.run(query, [chatId], function(err) {
+      if (err) {
+        console.error('Error deleting chat:', err);
+        return res.status(500).json({ error: 'Failed to delete chat history' });
+      }
+
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Chat not found' });
+      }
+
+      res.json({ success: true, message: 'Chat history deleted successfully' });
+    });
+  } catch (error) {
+    console.error('Error in delete chat endpoint:', error);
+    res.status(500).json({ error: 'Server error while deleting chat' });
+  }
+});
+
+// ============================================================================
 // SERVER START
 // ============================================================================
 const PORT = process.env.PORT || 5000;

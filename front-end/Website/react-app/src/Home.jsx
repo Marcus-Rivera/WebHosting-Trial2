@@ -67,6 +67,10 @@ const SidebarContent = ({ onClose, isMobile }) => {
 
   const handleLogout = () => {
     sessionStorage.removeItem("token");
+    localStorage.removeItem('careerbot_messages');
+    localStorage.removeItem('careerbot_resume');
+    localStorage.removeItem('careerbot_step');
+    localStorage.removeItem('careerbot_chatId');
     navigate('/login');
   };
 

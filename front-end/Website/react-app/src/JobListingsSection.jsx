@@ -19,6 +19,11 @@ import {
   Typography,
   CircularProgress,
   Alert,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
+  FormControl,
+  FormLabel,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
@@ -31,8 +36,11 @@ import BusinessIcon from '@mui/icons-material/Business';
 import Groups2Icon from '@mui/icons-material/Groups2';
 import CloseIcon from '@mui/icons-material/Close';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
+import DescriptionIcon from '@mui/icons-material/Description';
+import { useSessionCheck } from "../useSessionCheck";
 
 const JobListingsSection = () => {
+  const { userData } = useSessionCheck();
   const [searchTerm, setSearchTerm] = useState('');
   const [location, setLocation] = useState('');
   const [jobType, setJobType] = useState('all');
@@ -44,6 +52,9 @@ const JobListingsSection = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [userResumes, setUserResumes] = useState([]);
+  const [resumeOption, setResumeOption] = useState('upload'); // 'upload' or 'saved'
+  const [selectedResumeId, setSelectedResumeId] = useState('');
   const [applicationData, setApplicationData] = useState({
     fullName: '',
     email: '',
@@ -95,6 +106,31 @@ const JobListingsSection = () => {
     fetchJobs();
   }, []);
 
+  // Fetch user's saved resumes
+  useEffect(() => {
+    const fetchUserResumes = async () => {
+      if (!userData?.email) return;
+
+      try {
+        const profileResponse = await fetch(`http://localhost:5000/api/profile/${userData.email}`);
+        const userProfile = await profileResponse.json();
+        
+        if (!userProfile || !userProfile.user_id) return;
+
+        const resumeResponse = await fetch(`http://localhost:5000/api/resume/user/${userProfile.user_id}`);
+        const resumeData = await resumeResponse.json();
+
+        if (resumeResponse.ok) {
+          setUserResumes(resumeData);
+        }
+      } catch (err) {
+        console.error('Error fetching user resumes:', err);
+      }
+    };
+
+    fetchUserResumes();
+  }, [userData]);
+
   // Load saved jobs from localStorage
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem('savedJobs') || '[]');
@@ -126,6 +162,8 @@ const JobListingsSection = () => {
 
   const handleCloseApplyModal = () => {
     setApplyModalOpen(false);
+    setResumeOption('upload');
+    setSelectedResumeId('');
     setApplicationData({
       fullName: '',
       email: '',
@@ -139,9 +177,34 @@ const JobListingsSection = () => {
     setDetailsModalOpen(false);
   };
 
-  const handleApplicationSubmit = () => {
-    console.log('Application submitted:', applicationData);
-    console.log('Job applied for:', selectedJob);
+  const handleApplicationSubmit = async () => {
+    let resumeToSubmit = null;
+
+    if (resumeOption === 'saved' && selectedResumeId) {
+      // Fetch the selected resume from database
+      try {
+        const response = await fetch(`http://localhost:5000/api/resume/download/${selectedResumeId}`);
+        if (response.ok) {
+          const blob = await response.blob();
+          const selectedResume = userResumes.find(r => r.resume_id === parseInt(selectedResumeId));
+          resumeToSubmit = new File([blob], selectedResume.filename, { type: 'application/pdf' });
+        }
+      } catch (err) {
+        console.error('Error fetching saved resume:', err);
+        alert('Failed to retrieve saved resume');
+        return;
+      }
+    } else {
+      resumeToSubmit = applicationData.resume;
+    }
+
+    console.log('Application submitted:', {
+      ...applicationData,
+      resume: resumeToSubmit,
+      job: selectedJob,
+      resumeSource: resumeOption,
+    });
+    
     alert('Application submitted successfully!');
     handleCloseApplyModal();
   };
@@ -168,6 +231,15 @@ const JobListingsSection = () => {
     
     return matchesSearch && matchesLocation && matchesType && matchesTab;
   });
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
 
   const JobCard = ({ job }) => (
     <Card className="mb-4 hover:shadow-xl transition-all duration-300 border border-gray-100">
@@ -481,43 +553,115 @@ const JobListingsSection = () => {
             value={applicationData.coverLetter}
             onChange={(e) => setApplicationData(prev => ({ ...prev, coverLetter: e.target.value }))}
             placeholder="Tell us why you're a great fit for this role..."
-            sx={{ mb: 2 }}
+            sx={{ mb: 3 }}
           />
-          
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center mb-2">
-            <input
-              type="file"
-              id="resume-upload"
-              accept=".pdf,.doc,.docx"
-              onChange={handleFileChange}
-              style={{ display: 'none' }}
-            />
-            <label htmlFor="resume-upload">
-              <Button
-                variant="outlined"
-                component="span"
-                startIcon={<UploadFileIcon />}
-                sx={{
-                  borderColor: '#272343',
-                  color: '#272343',
-                  '&:hover': {
-                    borderColor: '#FBDA23',
-                    backgroundColor: '#FBDA23',
-                  },
-                }}
-              >
-                Upload Resume
-              </Button>
-            </label>
-            {applicationData.resume && (
-              <Typography variant="body2" sx={{ mt: 2, color: '#2ECC71', fontWeight: 'bold' }}>
-                ✓ {applicationData.resume.name}
+
+          {/* Resume Selection */}
+          <FormControl component="fieldset" sx={{ mb: 2 }}>
+            <FormLabel component="legend" sx={{ fontWeight: 'bold', color: '#272343', mb: 1 }}>
+              Resume
+            </FormLabel>
+            <RadioGroup
+              value={resumeOption}
+              onChange={(e) => {
+                setResumeOption(e.target.value);
+                setApplicationData(prev => ({ ...prev, resume: null }));
+                setSelectedResumeId('');
+              }}
+            >
+              <FormControlLabel 
+                value="upload" 
+                control={<Radio sx={{ color: '#FBDA23', '&.Mui-checked': { color: '#FBDA23' } }} />} 
+                label="Upload New Resume" 
+              />
+              <FormControlLabel 
+                value="saved" 
+                control={<Radio sx={{ color: '#FBDA23', '&.Mui-checked': { color: '#FBDA23' } }} />} 
+                label={`Choose from My Resumes (${userResumes.length})`}
+                disabled={userResumes.length === 0}
+              />
+            </RadioGroup>
+          </FormControl>
+
+          {resumeOption === 'upload' ? (
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+              <input
+                type="file"
+                id="resume-upload"
+                accept=".pdf,.doc,.docx"
+                onChange={handleFileChange}
+                style={{ display: 'none' }}
+              />
+              <label htmlFor="resume-upload">
+                <Button
+                  variant="outlined"
+                  component="span"
+                  startIcon={<UploadFileIcon />}
+                  sx={{
+                    borderColor: '#272343',
+                    color: '#272343',
+                    '&:hover': {
+                      borderColor: '#FBDA23',
+                      backgroundColor: '#FBDA23',
+                    },
+                  }}
+                >
+                  Upload Resume
+                </Button>
+              </label>
+              {applicationData.resume && (
+                <Typography variant="body2" sx={{ mt: 2, color: '#2ECC71', fontWeight: 'bold' }}>
+                  ✓ {applicationData.resume.name}
+                </Typography>
+              )}
+              <Typography variant="caption" display="block" sx={{ mt: 1, color: 'text.secondary' }}>
+                Supported formats: PDF, DOC, DOCX (Max 5MB)
               </Typography>
-            )}
-            <Typography variant="caption" display="block" sx={{ mt: 1, color: 'text.secondary' }}>
-              Supported formats: PDF, DOC, DOCX (Max 5MB)
-            </Typography>
-          </div>
+            </div>
+          ) : (
+            <div className="border border-gray-300 rounded-lg p-4">
+              {userResumes.length > 0 ? (
+                <FormControl fullWidth>
+                  <Typography variant="body2" sx={{ mb: 2, fontWeight: 'bold' }}>
+                    Select a resume:
+                  </Typography>
+                  <RadioGroup
+                    value={selectedResumeId}
+                    onChange={(e) => setSelectedResumeId(e.target.value)}
+                  >
+                    {userResumes.map((resume) => (
+                      <div
+                        key={resume.resume_id}
+                        className="flex items-center justify-between p-2 hover:bg-gray-50 rounded"
+                      >
+                        <FormControlLabel
+                          value={resume.resume_id.toString()}
+                          control={<Radio sx={{ color: '#FBDA23', '&.Mui-checked': { color: '#FBDA23' } }} />}
+                          label={
+                            <div className="flex items-center gap-2">
+                              <DescriptionIcon sx={{ color: '#272343' }} />
+                              <div>
+                                <Typography variant="body2" fontWeight="bold">
+                                  {resume.filename}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {formatDate(resume.created_at)}
+                                </Typography>
+                              </div>
+                            </div>
+                          }
+                        />
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+              ) : (
+                <Typography variant="body2" color="text.secondary" textAlign="center">
+                  No saved resumes found. Create one in the Career Bot!
+                </Typography>
+              )}
+            </div>
+          )}
         </DialogContent>
         <DialogActions sx={{ p: 3 }}>
           <Button 
@@ -532,7 +676,13 @@ const JobListingsSection = () => {
           <Button
             onClick={handleApplicationSubmit}
             variant="contained"
-            disabled={!applicationData.fullName || !applicationData.email || !applicationData.phone}
+            disabled={
+              !applicationData.fullName || 
+              !applicationData.email || 
+              !applicationData.phone ||
+              (resumeOption === 'upload' && !applicationData.resume) ||
+              (resumeOption === 'saved' && !selectedResumeId)
+            }
             sx={{
               backgroundColor: '#FBDA23',
               color: '#272343',
@@ -654,10 +804,6 @@ const JobListingsSection = () => {
               <Typography variant="body1" sx={{ mb: 3, lineHeight: 1.8, whiteSpace: 'pre-line' }}>
                 {selectedJob.description}
               </Typography>
-
-             
-
-        
             </>
           )}
         </DialogContent>

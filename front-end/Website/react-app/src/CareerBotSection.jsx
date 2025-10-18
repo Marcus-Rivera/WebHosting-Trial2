@@ -18,6 +18,13 @@ const CareerBotSection = () => {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
+  //  For Saving of PDF to account
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [saveFileName, setSaveFileName] = useState("");
+
+  // Chat History
+  const [lastSavedChatId, setLastSavedChatId] = useState(null);
+  const [showNewResumeDialog, setShowNewResumeDialog] = useState(false);
 
   const { userData, loading, sessionError } = useSessionCheck();
 
@@ -66,6 +73,49 @@ const CareerBotSection = () => {
       inputRef.current.focus();
     }
   }, [isLoading, messages]);
+
+  // Load chat when component mounts
+  useEffect(() => {
+    const savedMessages = localStorage.getItem('careerbot_messages');
+    const savedResumeData = localStorage.getItem('careerbot_resume');
+    const savedStep = localStorage.getItem('careerbot_step');
+    const savedChatId = localStorage.getItem('careerbot_chatId');
+    
+    // First, try to load from localStorage (for same session)
+    if (savedMessages) {
+      try {
+        const messages = JSON.parse(savedMessages);
+        setMessages(messages);
+        
+        if (savedResumeData) {
+          setResumeData(JSON.parse(savedResumeData));
+        }
+        
+        if (savedStep) {
+          setCurrentStep(savedStep);
+        }
+        
+        if (savedChatId) {
+          setLastSavedChatId(parseInt(savedChatId));
+        }
+        
+        console.log('Loaded chat from localStorage');
+      } catch (e) {
+        console.error('Error parsing saved data:', e);
+        // If localStorage is corrupted, try loading from database
+        if (userData) {
+          loadLastChatFromDatabase();
+        }
+      }
+    } else {
+      // If localStorage is empty and user is logged in, load from database
+      if (userData) {
+        loadLastChatFromDatabase();
+      }
+    }
+  }, [userData]); // Load when userData becomes available
+
+  
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -383,8 +433,11 @@ const CareerBotSection = () => {
       case "complete":
         if (userInput.toLowerCase().includes("edit")) {
           botResponse = "Sure! What section would you like to edit? (personal info, objective, summary, experience, education, certifications, languages, or skills)";
+        } else if (userInput.toLowerCase().includes("new") || userInput.toLowerCase().includes("another")) {
+          setShowNewResumeDialog(true);
+          botResponse = "Would you like to create another resume? This will start fresh with a new conversation.";
         } else {
-          botResponse = "You can preview your resume or download it as PDF. Need any changes? Just let me know!";
+          botResponse = "You can preview your resume, download it as PDF, or save it to your account. Need any changes? Just let me know!\n\nType 'new resume' if you want to create another one.";
         }
         break;
 
@@ -662,9 +715,6 @@ const CareerBotSection = () => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      // Save to database
-      await saveResumeToDatabase(pdfBlob, filename);
-
       setMessages((prev) => [...prev, { 
         from: "bot", 
         text: "Your resume has been downloaded! 🎉 Good luck with your job applications!" 
@@ -673,6 +723,28 @@ const CareerBotSection = () => {
     } catch (err) {
       setError("Failed to generate PDF. Please refresh the page and try again.");
       console.error("PDF Generation Error:", err);
+    }
+  };
+
+  const handleOpenSaveDialog = () => {
+    const defaultFilename = resumeData.personalInfo.name 
+      ? `${resumeData.personalInfo.name.replace(/\s+/g, '_')}_Resume`
+      : 'Resume';
+    setSaveFileName(defaultFilename);
+    setShowSaveDialog(true);
+  };
+
+  const handleSaveToDatabase = async () => {
+    try {
+      const pdfBlob = generatePDF();
+      const filename = `${saveFileName}.pdf`;
+      
+      await saveResumeToDatabase(pdfBlob, filename);
+      setShowSaveDialog(false);
+      setSaveFileName("");
+    } catch (err) {
+      setError("Failed to save resume. Please try again.");
+      console.error("Save Error:", err);
     }
   };
 
@@ -716,6 +788,164 @@ const CareerBotSection = () => {
     }
   };
 
+  const saveChatHistory = async (isAutoSave = false) => {
+    try {
+      if (!userData) {
+        if (!isAutoSave) {
+          throw new Error("User data not loaded. Please ensure you're logged in.");
+        }
+        return null; // Silently fail for auto-save if not logged in
+      }
+      
+      // Fetch user_id from backend using email
+      const userResponse = await fetch(`http://localhost:5000/api/profile/${userData.email}`);
+      const userProfile = await userResponse.json();
+      
+      if (!userProfile || !userProfile.user_id) {
+        if (!isAutoSave) {
+          throw new Error("Could not retrieve user ID from profile.");
+        }
+        return null;
+      }
+      
+      const response = await fetch('http://localhost:5000/api/chat/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: userProfile.user_id,
+          chatData: messages,
+          resumeData: resumeData
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setLastSavedChatId(data.chatId);
+        if (!isAutoSave) {
+          setMessages((prev) => [...prev, { 
+            from: "bot", 
+            text: "✅ Chat history saved successfully!" 
+          }]);
+        }
+        return data;
+      } else {
+        throw new Error(data.error || 'Failed to save chat history');
+      }
+    } catch (error) {
+      console.error('Error saving chat history:', error);
+      if (!isAutoSave) {
+        setError(`Failed to save chat history: ${error.message}`);
+      }
+      return null;
+    }
+  };
+
+  // Helper function to determine current step from resume data
+  const determineCurrentStep = (resumeData) => {
+    if (!resumeData) return "name";
+    if (resumeData.skills && resumeData.skills.length > 0) return "complete";
+    if (resumeData.languages && resumeData.languages.length > 0) return "skills";
+    if (resumeData.certifications && resumeData.certifications.length > 0) return "languages";
+    if (resumeData.education && resumeData.education.length > 0) return "certifications";
+    if (resumeData.experience && resumeData.experience.length > 0) return "education";
+    if (resumeData.summary) return "experience";
+    if (resumeData.objective) return "summary";
+    if (resumeData.personalInfo && resumeData.personalInfo.portfolio) return "objective";
+    if (resumeData.personalInfo && resumeData.personalInfo.linkedin) return "portfolio";
+    if (resumeData.personalInfo && resumeData.personalInfo.location) return "linkedin";
+    if (resumeData.personalInfo && resumeData.personalInfo.phone) return "location";
+    if (resumeData.personalInfo && resumeData.personalInfo.email) return "phone";
+    if (resumeData.personalInfo && resumeData.personalInfo.name) return "email";
+    return "name";
+  };
+
+  // Load last chat from database
+  const loadLastChatFromDatabase = async () => {
+    try {
+      if (!userData) return;
+      
+      const userResponse = await fetch(`http://localhost:5000/api/profile/${userData.email}`);
+      const userProfile = await userResponse.json();
+      
+      if (!userProfile || !userProfile.user_id) return;
+      
+      const response = await fetch(`http://localhost:5000/api/chat/history/${userProfile.user_id}`);
+      const data = await response.json();
+      
+      if (data.success && data.data.length > 0) {
+        const lastChat = data.data[0]; // Get most recent chat
+        
+        // Load the chat data
+        setMessages(lastChat.chat_data);
+        if (lastChat.resume_data) {
+          setResumeData(lastChat.resume_data);
+        }
+        setLastSavedChatId(lastChat.chat_id);
+        
+        // Determine the current step based on resume data
+        const step = determineCurrentStep(lastChat.resume_data);
+        setCurrentStep(step);
+        
+        // Also save to localStorage for persistence during session
+        localStorage.setItem('careerbot_messages', JSON.stringify(lastChat.chat_data));
+        localStorage.setItem('careerbot_resume', JSON.stringify(lastChat.resume_data || resumeData));
+        localStorage.setItem('careerbot_step', step);
+        localStorage.setItem('careerbot_chatId', lastChat.chat_id.toString());
+        
+        console.log('Loaded last chat from database');
+      }
+    } catch (error) {
+      console.error('Error loading chat from database:', error);
+    }
+  };
+
+  const handleCreateNewResume = () => {
+  // Clear localStorage
+    localStorage.removeItem('careerbot_messages');
+    localStorage.removeItem('careerbot_resume');
+    localStorage.removeItem('careerbot_step');
+    localStorage.removeItem('careerbot_chatId');
+    
+    // Reset all states to initial values
+    setMessages([
+      {
+        from: "bot",
+        text: "Kumusta! 👋 Welcome back to TaraTrabaho AI Resume Builder! Let's create another professional resume. What's your full name?",
+      },
+    ]);
+    setInput("");
+    setCurrentStep("name");
+    setShowPreview(false);
+    setIsLoading(false);
+    setError("");
+    setShowNewResumeDialog(false);
+    setLastSavedChatId(null);
+    
+    // Reset resume data
+    setResumeData({
+      personalInfo: {
+        name: "",
+        email: "",
+        phone: "",
+        location: "",
+        linkedin: "",
+        portfolio: "",
+      },
+      objective: "",
+      summary: "",
+      experience: [],
+      education: [],
+      skills: [],
+      certifications: [],
+      languages: [],
+      references: "Available upon request",
+    });
+    
+    console.log('Chat reset - starting new resume');
+  };
 
   return (
     <div className="flex flex-col h-screen overflow-hidden pt-5 bg-white">
@@ -776,22 +1006,59 @@ const CareerBotSection = () => {
       )}
 
       {currentStep === "complete" && (
-        <div className="px-6 pb-2 flex gap-2">
-          <button
-            onClick={() => setShowPreview(true)}
-            // Add this code right after the line:
-// <button onClick={() => setShowPreview(true)}
+        <div className="px-6 pb-3">
+          {/* Main Actions - Horizontal Row */}
+          <div className="flex gap-2 mb-2">
+            <button
+              onClick={() => setShowPreview(true)}
+              className="flex-1 bg-white border border-gray-300 text-gray-700 py-2 px-3 rounded-md flex items-center justify-center gap-1.5 hover:border-gray-400 hover:bg-gray-50 transition-all text-xs font-medium"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              Preview
+            </button>
 
-            className="flex-1 bg-gray-800 text-white py-2 px-4 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-900 transition-colors"
-          >
-            📄 Preview Resume
-          </button>
+            <button
+              onClick={handleDownload}
+              className="flex-1 bg-yellow-400 text-gray-900 py-2 px-3 rounded-md flex items-center justify-center gap-1.5 hover:bg-yellow-500 transition-all text-xs font-semibold"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Download
+            </button>
+
+            <button
+              onClick={handleOpenSaveDialog}
+              className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-md flex items-center justify-center gap-1.5 hover:bg-blue-700 transition-all text-xs font-medium"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+              </svg>
+              Save
+            </button>
+          </div>
+
+          {/* New Resume Button */}
           <button
-            onClick={handleDownload}
-            className="flex-1 bg-yellow-400 text-gray-900 py-2 px-4 rounded-lg flex items-center justify-center gap-2 hover:bg-yellow-500 transition-colors font-semibold"
+            onClick={() => setShowNewResumeDialog(true)}
+            className="w-full bg-purple-600 text-white py-2 px-3 rounded-md flex items-center justify-center gap-1.5 hover:bg-purple-700 transition-all text-xs font-medium"
           >
-            ⬇️ Download PDF
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            New Resume
           </button>
+
+          {/* Status - Minimal */}
+          {lastSavedChatId && (
+            <p className="text-[10px] text-center text-green-600 mt-1.5 flex items-center justify-center gap-1">
+              <span className="inline-block w-1.5 h-1.5 bg-green-600 rounded-full"></span>
+              Auto-saved
+            </p>
+          )}
         </div>
       )}
 
@@ -819,7 +1086,7 @@ const CareerBotSection = () => {
       </div>
 
       {showPreview && (
-        <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm ">
           <div className="bg-white rounded-lg w-full max-w-3xl max-h-screen overflow-hidden flex flex-col">
             <div className="flex justify-between items-center p-4 border-b bg-gray-800">
               <h2 className="text-xl font-bold text-white">Resume Preview</h2>
@@ -854,6 +1121,85 @@ const CareerBotSection = () => {
           </div>
         </div>
       )}
+      {/* For Saving Dialog  */}
+      {showSaveDialog && (
+        <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-[#272343] rounded-lg w-full max-w-md p-6">
+            <h2 className="text-xl font-bold text-white mb-4">Save Resume to Account</h2>
+            
+            <p className="text-sm text-white mb-4">
+              Are you sure you want to save this resume to your TaraTrabaho account? You can access it anytime from your profile.
+            </p>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-yellow-200 mb-2">
+                Resume Name
+              </label>
+              <input
+                type="text"
+                value={saveFileName}
+                onChange={(e) => setSaveFileName(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none text-white focus:ring-2 focus:ring-yellow-400"
+                placeholder="Enter resume name"
+              />
+              <p className="text-xs text-white mt-1">.pdf extension will be added automatically</p>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={handleSaveToDatabase}
+                disabled={!saveFileName.trim()}
+                className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-lg font-semibold hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                ✓ Yes, Save
+              </button>
+              <button
+                onClick={() => {
+                  setShowSaveDialog(false);
+                  setSaveFileName("");
+                }}
+                className="flex-1 px-6 py-2 border-2 border-gray-300 rounded-lg text-red-300 hover:bg-gray-50 transition-colors font-semibold"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Create Another Resume Dialog */}
+      {showNewResumeDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-md p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Create Another Resume?</h2>
+            
+            <p className="text-sm text-gray-600 mb-4">
+              Are you sure you want to create a new resume? This will start a fresh conversation and reset all fields.
+            </p>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+              <p className="text-xs text-blue-800">
+                💡 <strong>Don't worry!</strong> Your current chat history and resume have been automatically saved to your account.
+              </p>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={handleCreateNewResume}
+                className="flex-1 bg-purple-500 text-white py-2 px-4 rounded-lg font-semibold hover:bg-purple-600 transition-colors"
+              >
+                ✓ Yes, Start New Resume
+              </button>
+              <button
+                onClick={() => setShowNewResumeDialog(false)}
+                className="flex-1 px-6 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-semibold"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
@@ -994,5 +1340,7 @@ const ResumePreview = ({ data }) => {
     </div>
   );
 };
+
+
 
 export default CareerBotSection;
