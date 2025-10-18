@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import { useSessionCheck } from "../useSessionCheck";
 import SessionExpiredModal from "../SessionExpiredModal";
@@ -25,6 +25,10 @@ const CareerBotSection = () => {
   // Chat History
   const [lastSavedChatId, setLastSavedChatId] = useState(null);
   const [showNewResumeDialog, setShowNewResumeDialog] = useState(false);
+  const [showChatHistory, setShowChatHistory] = useState(false);
+  const [chatHistoryList, setChatHistoryList] = useState([]);
+  const [loadingChats, setLoadingChats] = useState(false);
+  const [activeChatId, setActiveChatId] = useState(null);
 
   const { userData, loading, sessionError } = useSessionCheck();
 
@@ -49,6 +53,7 @@ const CareerBotSection = () => {
     references: "Available upon request",
   });
 
+  // 1. Load jsPDF library
   useEffect(() => {
     const script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
@@ -68,54 +73,169 @@ const CareerBotSection = () => {
     };
   }, []);
 
+  // 2. Auto-focus input when not loading
   useEffect(() => {
     if (!isLoading && inputRef.current) {
       inputRef.current.focus();
     }
   }, [isLoading, messages]);
 
-  // Load chat when component mounts
+  // 3. Load chat on mount - localStorage first, then databas
   useEffect(() => {
-    const savedMessages = localStorage.getItem('careerbot_messages');
-    const savedResumeData = localStorage.getItem('careerbot_resume');
-    const savedStep = localStorage.getItem('careerbot_step');
-    const savedChatId = localStorage.getItem('careerbot_chatId');
+    const loadChatData = async () => {
+      console.log('🔄 CareerBot mounted - loading latest chat...');
+      
+      // If user is logged in, load LATEST chat from database
+      if (userData && !loading) {
+        console.log('📡 Fetching LATEST chat from database...');
+        await loadLastChatFromDatabase();
+      } else {
+        console.log('⏳ Waiting for user data to load...');
+      }
+    };
     
-    // First, try to load from localStorage (for same session)
-    if (savedMessages) {
-      try {
-        const messages = JSON.parse(savedMessages);
-        setMessages(messages);
-        
-        if (savedResumeData) {
-          setResumeData(JSON.parse(savedResumeData));
-        }
-        
-        if (savedStep) {
-          setCurrentStep(savedStep);
-        }
-        
-        if (savedChatId) {
-          setLastSavedChatId(parseInt(savedChatId));
-        }
-        
-        console.log('Loaded chat from localStorage');
-      } catch (e) {
-        console.error('Error parsing saved data:', e);
-        // If localStorage is corrupted, try loading from database
-        if (userData) {
-          loadLastChatFromDatabase();
-        }
-      }
-    } else {
-      // If localStorage is empty and user is logged in, load from database
-      if (userData) {
-        loadLastChatFromDatabase();
-      }
-    }
-  }, [userData]); // Load when userData becomes available
+    loadChatData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userData, loading]);
 
-  
+  // 4. CONTINUOUS AUTO-SAVE to database (every message)
+  useEffect(() => {
+
+    if (userData && messages.length > 1 && !isLoading) {
+      const timer = setTimeout(async () => {
+        console.log('💾 Auto-saving chat to database...');
+        await saveChatHistory(true); 
+        
+        fetchAllUserChats();
+      }); // Wait 2 seconds after last message
+
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, resumeData, userData, isLoading]); // Remove saveChatHistory and fetchAllUserChats from here
+
+  // 5. Save to localStorage instantly (for navigation persistence)
+  useEffect(() => {
+    localStorage.setItem('careerbot_messages', JSON.stringify(messages));
+    localStorage.setItem('careerbot_resume', JSON.stringify(resumeData));
+    localStorage.setItem('careerbot_step', currentStep);
+    if (lastSavedChatId) {
+      localStorage.setItem('careerbot_chatId', lastSavedChatId.toString());
+    }
+  }, [messages, resumeData, currentStep, lastSavedChatId]);
+
+  // 6. Scroll to bottom on new messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+
+  useEffect(() => {
+    if (userData && !loading) {
+      fetchAllUserChats(); // Load the list for the badge counter
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userData, loading]);
+
+  // CONSTSSSS
+
+  // saveChatHistory function 
+  // Wrap functions that are used as dependencies
+  const saveChatHistory = useCallback(async (isAutoSave = false) => {
+    try {
+      if (!userData) {
+        if (!isAutoSave) {
+          throw new Error("User data not loaded. Please ensure you're logged in.");
+        }
+        return null;
+      }
+      
+      const userResponse = await fetch(`http://localhost:5000/api/profile/${userData.email}`);
+      const userProfile = await userResponse.json();
+      
+      if (!userProfile || !userProfile.user_id) {
+        if (!isAutoSave) {
+          throw new Error("Could not retrieve user ID from profile.");
+        }
+        return null;
+      }
+      
+      let response;
+      let data;
+      
+      if (lastSavedChatId) {
+        console.log('Updating existing chat:', lastSavedChatId);
+        response = await fetch(`http://localhost:5000/api/chat/update/${lastSavedChatId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chatData: messages,
+            resumeData: resumeData
+          }),
+        });
+        data = await response.json();
+      } else {
+        console.log('Creating new chat');
+        response = await fetch('http://localhost:5000/api/chat/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: userProfile.user_id,
+            chatData: messages,
+            resumeData: resumeData
+          }),
+        });
+        data = await response.json();
+      }
+      
+      if (data.success) {
+        if (data.chatId && !lastSavedChatId) {
+          setLastSavedChatId(data.chatId);
+          setActiveChatId(data.chatId);
+          console.log('New chat created with ID:', data.chatId);
+        }
+        
+        if (!isAutoSave) {
+          setMessages((prev) => [...prev, { 
+            from: "bot", 
+            text: lastSavedChatId ? "✅ Chat history updated successfully!" : "✅ Chat history saved successfully!" 
+          }]);
+        }
+        return data;
+      } else {
+        throw new Error(data.error || 'Failed to save chat history');
+      }
+    } catch (error) {
+      console.error('Error saving chat history:', error);
+      if (!isAutoSave) {
+        setError(`Failed to save chat history: ${error.message}`);
+      }
+      return null;
+    }
+  }, [userData, lastSavedChatId, messages, resumeData]);
+
+  // Fetch all user chat histories
+  const fetchAllUserChats = useCallback(async () => {
+    try {
+      if (!userData) return;
+      
+      setLoadingChats(true);
+      const userResponse = await fetch(`http://localhost:5000/api/profile/${userData.email}`);
+      const userProfile = await userResponse.json();
+      
+      if (!userProfile || !userProfile.user_id) return;
+      
+      const response = await fetch(`http://localhost:5000/api/chat/history/${userProfile.user_id}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setChatHistoryList(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching chat history:', error);
+    } finally {
+      setLoadingChats(false);
+    }
+  }, [userData]);
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -788,60 +908,9 @@ const CareerBotSection = () => {
     }
   };
 
-  const saveChatHistory = async (isAutoSave = false) => {
-    try {
-      if (!userData) {
-        if (!isAutoSave) {
-          throw new Error("User data not loaded. Please ensure you're logged in.");
-        }
-        return null; // Silently fail for auto-save if not logged in
-      }
-      
-      // Fetch user_id from backend using email
-      const userResponse = await fetch(`http://localhost:5000/api/profile/${userData.email}`);
-      const userProfile = await userResponse.json();
-      
-      if (!userProfile || !userProfile.user_id) {
-        if (!isAutoSave) {
-          throw new Error("Could not retrieve user ID from profile.");
-        }
-        return null;
-      }
-      
-      const response = await fetch('http://localhost:5000/api/chat/save', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: userProfile.user_id,
-          chatData: messages,
-          resumeData: resumeData
-        }),
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setLastSavedChatId(data.chatId);
-        if (!isAutoSave) {
-          setMessages((prev) => [...prev, { 
-            from: "bot", 
-            text: "✅ Chat history saved successfully!" 
-          }]);
-        }
-        return data;
-      } else {
-        throw new Error(data.error || 'Failed to save chat history');
-      }
-    } catch (error) {
-      console.error('Error saving chat history:', error);
-      if (!isAutoSave) {
-        setError(`Failed to save chat history: ${error.message}`);
-      }
-      return null;
-    }
-  };
+
+  
+
 
   // Helper function to determine current step from resume data
   const determineCurrentStep = (resumeData) => {
@@ -863,44 +932,68 @@ const CareerBotSection = () => {
   };
 
   // Load last chat from database
-  const loadLastChatFromDatabase = async () => {
-    try {
-      if (!userData) return;
-      
-      const userResponse = await fetch(`http://localhost:5000/api/profile/${userData.email}`);
-      const userProfile = await userResponse.json();
-      
-      if (!userProfile || !userProfile.user_id) return;
-      
-      const response = await fetch(`http://localhost:5000/api/chat/history/${userProfile.user_id}`);
-      const data = await response.json();
-      
-      if (data.success && data.data.length > 0) {
-        const lastChat = data.data[0]; // Get most recent chat
-        
-        // Load the chat data
-        setMessages(lastChat.chat_data);
-        if (lastChat.resume_data) {
-          setResumeData(lastChat.resume_data);
-        }
-        setLastSavedChatId(lastChat.chat_id);
-        
-        // Determine the current step based on resume data
-        const step = determineCurrentStep(lastChat.resume_data);
-        setCurrentStep(step);
-        
-        // Also save to localStorage for persistence during session
-        localStorage.setItem('careerbot_messages', JSON.stringify(lastChat.chat_data));
-        localStorage.setItem('careerbot_resume', JSON.stringify(lastChat.resume_data || resumeData));
-        localStorage.setItem('careerbot_step', step);
-        localStorage.setItem('careerbot_chatId', lastChat.chat_id.toString());
-        
-        console.log('Loaded last chat from database');
-      }
-    } catch (error) {
-      console.error('Error loading chat from database:', error);
+  // Load last chat from database (called on initial mount if no localStorage)
+const loadLastChatFromDatabase = async () => {
+  try {
+    if (!userData) {
+      console.log('❌ No user data - cannot load from database');
+      return;
     }
-  };
+    
+    // Get user_id
+    const userResponse = await fetch(`http://localhost:5000/api/profile/${userData.email}`);
+    const userProfile = await userResponse.json();
+    
+    if (!userProfile || !userProfile.user_id) {
+      console.log('❌ No user profile found');
+      return;
+    }
+    
+    // ==========================================
+    // 🔑 KEY QUERY: Get LAST chat by timestamp
+    // ==========================================
+    console.log('📡 Fetching chat history from database...');
+    const response = await fetch(`http://localhost:5000/api/chat/history/${userProfile.user_id}`);
+    const data = await response.json();
+    
+    if (data.success && data.data.length > 0) {
+      // ==========================================
+      // This gets the MOST RECENT chat
+      // Backend already sorted by: ORDER BY timestamp DESC
+      // ==========================================
+      const lastChat = data.data[0]; // ← FIRST item = LAST chat (most recent)
+      
+      console.log('✅ Loaded chat from database:', lastChat.chat_id);
+      console.log('📅 Chat timestamp:', lastChat.timestamp);
+      
+      // Load the chat data
+      setMessages(lastChat.chat_data);
+      if (lastChat.resume_data) {
+        setResumeData(lastChat.resume_data);
+      }
+      setLastSavedChatId(lastChat.chat_id); // ← This is critical!
+      setActiveChatId(lastChat.chat_id);
+      
+      // Determine where user left off
+      const step = determineCurrentStep(lastChat.resume_data);
+      setCurrentStep(step);
+      
+      // ==========================================
+      // Sync to localStorage for next time
+      // ==========================================
+      localStorage.setItem('careerbot_messages', JSON.stringify(lastChat.chat_data));
+      localStorage.setItem('careerbot_resume', JSON.stringify(lastChat.resume_data || resumeData));
+      localStorage.setItem('careerbot_step', step);
+      localStorage.setItem('careerbot_chatId', lastChat.chat_id.toString());
+      
+      console.log('💾 Synced database → localStorage');
+    } else {
+      console.log('ℹ️ No previous chats found in database');
+    }
+  } catch (error) {
+    console.error('❌ Error loading chat from database:', error);
+  }
+};
 
   const handleCreateNewResume = () => {
   // Clear localStorage
@@ -947,8 +1040,109 @@ const CareerBotSection = () => {
     console.log('Chat reset - starting new resume');
   };
 
+  // Load a specific chat by ID
+  const loadChatById = async (chatId) => {
+    try {
+      const chat = chatHistoryList.find(c => c.chat_id === chatId);
+      if (!chat) return;
+      
+      // Load the chat data
+      setMessages(chat.chat_data);
+      if (chat.resume_data) {
+        setResumeData(chat.resume_data);
+      }
+      setLastSavedChatId(chat.chat_id);
+      setActiveChatId(chat.chat_id);
+      
+      // Determine the current step
+      const step = determineCurrentStep(chat.resume_data);
+      setCurrentStep(step);
+      
+      // Save to localStorage
+      localStorage.setItem('careerbot_messages', JSON.stringify(chat.chat_data));
+      localStorage.setItem('careerbot_resume', JSON.stringify(chat.resume_data || resumeData));
+      localStorage.setItem('careerbot_step', step);
+      localStorage.setItem('careerbot_chatId', chat.chat_id.toString());
+      
+      setShowChatHistory(false);
+      console.log('Loaded chat:', chatId);
+    } catch (error) {
+      console.error('Error loading chat:', error);
+    }
+  };
+
+  // Start a brand new chat (not saved yet)
+  // Start a brand new chat (not saved yet)
+  const handleStartNewChat = () => {
+    console.log('🆕 Starting completely new chat...');
+    
+    // Clear localStorage
+    localStorage.removeItem('careerbot_messages');
+    localStorage.removeItem('careerbot_resume');
+    localStorage.removeItem('careerbot_step');
+    localStorage.removeItem('careerbot_chatId');
+    
+    // Reset all states
+    const initialMessage = {
+      from: "bot",
+      text: "Kumusta! 👋 Welcome to TaraTrabaho AI Resume Builder! I'll help you create a professional resume tailored for Philippine employers. Let's start with your full name.",
+    };
+    
+    setMessages([initialMessage]);
+    setInput("");
+    setCurrentStep("name");
+    setShowPreview(false);
+    setIsLoading(false);
+    setError("");
+    setLastSavedChatId(null);
+    setActiveChatId(null);
+    setShowChatHistory(false);
+    
+    // Reset resume data
+    const freshResumeData = {
+      personalInfo: {
+        name: "",
+        email: "",
+        phone: "",
+        location: "",
+        linkedin: "",
+        portfolio: "",
+      },
+      objective: "",
+      summary: "",
+      experience: [],
+      education: [],
+      skills: [],
+      certifications: [],
+      languages: [],
+      references: "Available upon request",
+    };
+    
+    setResumeData(freshResumeData);
+    
+    console.log('✅ New chat started - all data cleared');
+  };
+
+  
+
   return (
     <div className="flex flex-col h-screen overflow-hidden pt-5 bg-white">
+      {/* Chat History Button */}
+      <div className="px-6 pb-3 flex justify-between items-center border-b">
+        <h2 className="text-lg font-bold text-gray-900">Resume Builder</h2>
+        <button
+          onClick={() => {
+            setShowChatHistory(true);
+            fetchAllUserChats();
+          }}
+          className="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-sm font-medium"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+          Chat History ({chatHistoryList.length})
+        </button>
+      </div>
       <div className="flex-1 overflow-y-auto p-6">
         {messages.map((msg, index) => (
           <div
@@ -1195,6 +1389,105 @@ const CareerBotSection = () => {
               >
                 Cancel
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Chat History Sidebar */}
+      {showChatHistory && (
+        <div className="fixed inset-0 bg-opacity-50 flex justify-end z-50">
+          <div className="bg-white w-full max-w-md h-full flex flex-col shadow-2xl">
+            {/* Header */}
+            <div className="flex justify-between items-center p-4 border-b bg-gray-800">
+              <h2 className="text-xl font-bold text-white">Chat History</h2>
+              <button
+                onClick={() => setShowChatHistory(false)}
+                className="text-white hover:text-gray-300"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* New Chat Button */}
+            <div className="p-4 border-b">
+              <button
+                onClick={handleStartNewChat}
+                className="w-full bg-yellow-400 text-gray-900 py-3 px-4 rounded-lg flex items-center justify-center gap-2 hover:bg-yellow-500 transition-colors font-semibold"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Start New Chat
+              </button>
+            </div>
+
+            {/* Chat List */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {loadingChats ? (
+                <div className="flex items-center justify-center h-32">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400"></div>
+                </div>
+              ) : chatHistoryList.length > 0 ? (
+                <div className="space-y-2">
+                  {chatHistoryList.map((chat) => {
+                    const resumeName = chat.resume_data?.personalInfo?.name || 'Unnamed Resume';
+                    const isActive = activeChatId === chat.chat_id;
+                    const chatDate = new Date(chat.timestamp).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    });
+
+                    return (
+                      <button
+                        key={chat.chat_id}
+                        onClick={() => loadChatById(chat.chat_id)}
+                        className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
+                          isActive
+                            ? 'border-yellow-400 bg-yellow-50'
+                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            isActive ? 'bg-yellow-400' : 'bg-gray-200'
+                          }`}>
+                            <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-gray-900 truncate">
+                              {resumeName}
+                            </h3>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {chatDate}
+                            </p>
+                            {isActive && (
+                              <span className="inline-block mt-2 text-xs font-semibold text-yellow-700 bg-yellow-100 px-2 py-1 rounded">
+                                Active
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-gray-500">
+                  <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  <p className="text-sm">No chat history yet</p>
+                  <p className="text-xs mt-1">Start creating resumes to see them here</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

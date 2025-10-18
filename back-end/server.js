@@ -612,10 +612,10 @@ app.delete('/api/resume/:resumeId', (req, res) => {
 });
 
 // ============================================================================
-// CHAT HISTORY ENDPOINTS
+// CHAT HISTORY ENDPOINTS 
 // ============================================================================
 
-// Save chat history
+// 1. CREATE new chat history
 app.post('/api/chat/save', (req, res) => {
   try {
     const { userId, chatData, resumeData } = req.body;
@@ -651,7 +651,50 @@ app.post('/api/chat/save', (req, res) => {
   }
 });
 
-// Get user's chat history
+// 2. UPDATE existing chat history
+app.put('/api/chat/update/:chatId', (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const { chatData, resumeData } = req.body;
+    
+    if (!chatData) {
+      return res.status(400).json({ error: 'chatData is required' });
+    }
+
+    const chatDataString = JSON.stringify(chatData);
+    const resumeDataString = resumeData ? JSON.stringify(resumeData) : null;
+    const updatedAt = new Date().toISOString();
+
+    const query = `
+      UPDATE chathistory 
+      SET chat_data = ?, resume_data = ?, timestamp = ?
+      WHERE chat_id = ?
+    `;
+
+    db.run(query, [chatDataString, resumeDataString, updatedAt, chatId], function(err) {
+      if (err) {
+        console.error('Error updating chat history:', err);
+        return res.status(500).json({ error: 'Failed to update chat history' });
+      }
+
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Chat not found' });
+      }
+
+      res.json({ 
+        success: true, 
+        message: 'Chat history updated successfully',
+        chatId: parseInt(chatId)
+      });
+    });
+  } catch (error) {
+    console.error('Error in update chat endpoint:', error);
+    res.status(500).json({ error: 'Server error while updating chat' });
+  }
+});
+
+// 3. GET user's chat history (THIS WAS MISSING!)
+// In server.js
 app.get('/api/chat/history/:userId', (req, res) => {
   try {
     const { userId } = req.params;
@@ -660,7 +703,8 @@ app.get('/api/chat/history/:userId', (req, res) => {
       SELECT chat_id, user_id, chat_data, resume_data, timestamp
       FROM chathistory 
       WHERE user_id = ? 
-      ORDER BY timestamp DESC
+      ORDER BY timestamp DESC  -- ⭐ CRITICAL: NEWEST FIRST
+      LIMIT 50  -- Optional: limit to 50 most recent chats for performance
     `;
 
     db.all(query, [userId], (err, results) => {
@@ -676,6 +720,11 @@ app.get('/api/chat/history/:userId', (req, res) => {
         resume_data: row.resume_data ? JSON.parse(row.resume_data) : null
       }));
 
+      console.log(`✅ Fetched ${parsedResults.length} chats for user ${userId}`);
+      if (parsedResults.length > 0) {
+        console.log('📅 Most recent chat:', parsedResults[0].chat_id, 'at', parsedResults[0].timestamp);
+      }
+
       res.json({ success: true, data: parsedResults });
     });
   } catch (error) {
@@ -684,7 +733,7 @@ app.get('/api/chat/history/:userId', (req, res) => {
   }
 });
 
-// Delete chat history
+// 4. DELETE chat history
 app.delete('/api/chat/:chatId', (req, res) => {
   try {
     const { chatId } = req.params;
@@ -708,6 +757,7 @@ app.delete('/api/chat/:chatId', (req, res) => {
     res.status(500).json({ error: 'Server error while deleting chat' });
   }
 });
+
 
 // ============================================================================
 // SERVER START
